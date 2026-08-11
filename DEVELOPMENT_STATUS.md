@@ -14,18 +14,26 @@ Pre-Production / Playable Core Prototype
 - Headless Unreal Editor startup reached engine initialization and completed map check with 0 errors and 0 warnings.
 - Git repository standardized on `main`; Unreal ignore rules and local Git LFS hooks configured.
 - Portable VS Code build/project-generation tasks and team collaboration documentation created.
+- Active development repository relocated outside OneDrive and verified at `C:\Dev\OperationMouse`.
+- Private GitHub repository, initial commit, `origin`, and `main` upstream configured.
 
 ## Current Task
 
-Project / Repository / Collaboration / C++ Environment Setup - complete, awaiting review
+Repository and C++ environment setup complete
 
 ## Next
 
 Networked Movement Foundation
 
+## Repository
+
+Local development root: `C:\Dev\OperationMouse`  
+Repository: Private GitHub repository configured  
+Primary branch: `main`  
+Repository setup: Complete
+
 ## Known Issues
 
-- No GitHub remote is configured yet.
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
 
@@ -47,7 +55,7 @@ Developer: Unassigned
 System: Project setup  
 Branch: main  
 Main files/assets: Project bootstrap, repository configuration, team documentation  
-Status: Complete - awaiting review
+Status: Complete
 
 ## Deferred / Not V1
 
