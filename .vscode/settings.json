@@ -1,0 +1,17 @@
+{
+  "C_Cpp.default.cppStandard": "c++20",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.vs": true,
+    "**/Binaries": true,
+    "**/DerivedDataCache": true,
+    "**/Intermediate": true,
+    "**/Saved": true
+  },
+  "search.exclude": {
+    "**/Binaries": true,
+    "**/DerivedDataCache": true,
+    "**/Intermediate": true,
+    "**/Saved": true
+  }
+}
