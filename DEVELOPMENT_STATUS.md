@@ -1,8 +1,16 @@
 # Operation: Mouse Development Status
 
-## Current Phase
+## Current Milestone
 
-Pre-Production / Playable Core Prototype
+Networked Movement Foundation
+
+## Milestone Progress
+
+Completed: Multiplayer Gameplay Framework foundation and two-player spawn / possession verification (PASSED)
+
+Current: Phase 1 complete; pull request review
+
+Next: Phase 2 — Enhanced Input + basic replicated movement (not started)
 
 ## Completed
 
@@ -16,14 +24,10 @@ Pre-Production / Playable Core Prototype
 - Portable VS Code build/project-generation tasks and team collaboration documentation created.
 - Active development repository relocated outside OneDrive and verified at `C:\Dev\OperationMouse`.
 - Private GitHub repository, initial commit, `origin`, and `main` upstream configured.
-
-## Current Task
-
-Repository and C++ environment setup complete
-
-## Next
-
-Networked Movement Foundation
+- Multiplayer Gameplay Framework foundation completed with project-specific GameMode, GameState, PlayerState, PlayerController, and Character classes.
+- Server-side default pawn spawn and possession verified in a headless Unreal runtime smoke test.
+- Manual two-player Listen Server PIE test passed with two separate `OMMouseCharacter` instances in the same session.
+- Phase 1 network test map created at `Content/OperationMouse/Maps/L_Phase1_NetworkTest.umap`.
 
 ## Repository
 
@@ -51,11 +55,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Unassigned  
-System: Project setup  
-Branch: main  
-Main files/assets: Project bootstrap, repository configuration, team documentation  
-Status: Complete
+Developer: Unassigned
+
+System: Multiplayer Gameplay Framework
+
+Branch: feature/networked-movement
+
+Main files/assets: Core gameplay framework classes, replicated mouse character foundation, and Phase 1 network test map
+
+Status: Phase 1 complete; manual two-player Listen Server PIE test PASSED
 
 ## Deferred / Not V1
 
@@ -63,4 +71,3 @@ Status: Complete
 - PvP, local split-screen, host migration, workshop/mod support, and live-service systems.
 - Full human AI and a dedicated solo AI companion.
 - Automatic video replay.
-- Gameplay implementation remains deferred until the setup phase is approved.
