@@ -1,8 +1,16 @@
 # Operation: Mouse Development Status
 
-## Current Phase
+## Current Milestone
 
-Pre-Production / Playable Core Prototype
+Networked Movement Foundation
+
+## Milestone Progress
+
+Completed: Multiplayer Gameplay Framework foundation
+
+Current: Two-player spawn / possession verification
+
+Next: Enhanced Input + basic replicated movement
 
 ## Completed
 
@@ -16,14 +24,8 @@ Pre-Production / Playable Core Prototype
 - Portable VS Code build/project-generation tasks and team collaboration documentation created.
 - Active development repository relocated outside OneDrive and verified at `C:\Dev\OperationMouse`.
 - Private GitHub repository, initial commit, `origin`, and `main` upstream configured.
-
-## Current Task
-
-Repository and C++ environment setup complete
-
-## Next
-
-Networked Movement Foundation
+- Multiplayer Gameplay Framework foundation completed with project-specific GameMode, GameState, PlayerState, PlayerController, and Character classes.
+- Server-side default pawn spawn and possession verified in a headless Unreal runtime smoke test.
 
 ## Repository
 
@@ -36,6 +38,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
+- No project `.umap` exists yet, so the two-player PIE spawn/possession check requires a minimal Editor-created test map and remains the current manual verification step.
 
 ## Technical Decisions
 
@@ -51,11 +54,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Unassigned  
-System: Project setup  
-Branch: main  
-Main files/assets: Project bootstrap, repository configuration, team documentation  
-Status: Complete
+Developer: Unassigned
+
+System: Multiplayer Gameplay Framework
+
+Branch: feature/networked-movement
+
+Main files/assets: Core gameplay framework classes and replicated mouse character foundation
+
+Status: Framework foundation complete; two-player PIE verification pending
 
 ## Deferred / Not V1
 
@@ -63,4 +70,3 @@ Status: Complete
 - PvP, local split-screen, host migration, workshop/mod support, and live-service systems.
 - Full human AI and a dedicated solo AI companion.
 - Automatic video replay.
-- Gameplay implementation remains deferred until the setup phase is approved.
