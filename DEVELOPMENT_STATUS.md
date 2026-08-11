@@ -6,11 +6,11 @@ Networked Movement Foundation
 
 ## Milestone Progress
 
-Completed: Multiplayer Gameplay Framework foundation
+Completed: Multiplayer Gameplay Framework foundation and two-player spawn / possession verification (PASSED)
 
-Current: Two-player spawn / possession verification
+Current: Phase 1 complete; pull request review
 
-Next: Enhanced Input + basic replicated movement
+Next: Phase 2 — Enhanced Input + basic replicated movement (not started)
 
 ## Completed
 
@@ -26,6 +26,8 @@ Next: Enhanced Input + basic replicated movement
 - Private GitHub repository, initial commit, `origin`, and `main` upstream configured.
 - Multiplayer Gameplay Framework foundation completed with project-specific GameMode, GameState, PlayerState, PlayerController, and Character classes.
 - Server-side default pawn spawn and possession verified in a headless Unreal runtime smoke test.
+- Manual two-player Listen Server PIE test passed with two separate `OMMouseCharacter` instances in the same session.
+- Phase 1 network test map created at `Content/OperationMouse/Maps/L_Phase1_NetworkTest.umap`.
 
 ## Repository
 
@@ -38,7 +40,6 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
-- No project `.umap` exists yet, so the two-player PIE spawn/possession check requires a minimal Editor-created test map and remains the current manual verification step.
 
 ## Technical Decisions
 
@@ -60,9 +61,9 @@ System: Multiplayer Gameplay Framework
 
 Branch: feature/networked-movement
 
-Main files/assets: Core gameplay framework classes and replicated mouse character foundation
+Main files/assets: Core gameplay framework classes, replicated mouse character foundation, and Phase 1 network test map
 
-Status: Framework foundation complete; two-player PIE verification pending
+Status: Phase 1 complete; manual two-player Listen Server PIE test PASSED
 
 ## Deferred / Not V1
 
