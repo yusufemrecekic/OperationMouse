@@ -6,11 +6,11 @@ Networked Movement Foundation
 
 ## Milestone Progress
 
-Completed: Multiplayer Gameplay Framework foundation and two-player spawn / possession verification (PASSED)
+Completed: Phase 1 multiplayer framework and two-player spawn / possession verification (PASSED)
 
-Current: Phase 1 complete; pull request review
+Current: Phase 2 Enhanced Input and basic replicated movement implementation complete; manual multiplayer verification pending
 
-Next: Phase 2 — Enhanced Input + basic replicated movement (not started)
+Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started)
 
 ## Completed
 
@@ -28,6 +28,8 @@ Next: Phase 2 — Enhanced Input + basic replicated movement (not started)
 - Server-side default pawn spawn and possession verified in a headless Unreal runtime smoke test.
 - Manual two-player Listen Server PIE test passed with two separate `OMMouseCharacter` instances in the same session.
 - Phase 1 network test map created at `Content/OperationMouse/Maps/L_Phase1_NetworkTest.umap`.
+- Phase 2 Enhanced Input assets, camera-relative WASD movement, mouse look, and third-person camera implemented.
+- `OperationMouseEditor` Win64 Development build and headless input mapping smoke test passed for Phase 2.
 
 ## Repository
 
@@ -40,6 +42,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
+- Phase 2 movement replication still requires manual two-player Listen Server PIE verification.
 
 ## Technical Decisions
 
@@ -57,13 +60,13 @@ Repository setup: Complete
 
 Developer: Unassigned
 
-System: Multiplayer Gameplay Framework
+System: Enhanced Input and Basic Replicated Movement
 
-Branch: feature/networked-movement
+Branch: feature/basic-movement
 
-Main files/assets: Core gameplay framework classes, replicated mouse character foundation, and Phase 1 network test map
+Main files/assets: `AOMMouseCharacter`, `IA_Move`, `IA_Look`, `IMC_Gameplay`, and Phase 1 network test map
 
-Status: Phase 1 complete; manual two-player Listen Server PIE test PASSED
+Status: Phase 2 implementation, build, and automated smoke test complete; manual multiplayer verification pending
 
 ## Deferred / Not V1
 
