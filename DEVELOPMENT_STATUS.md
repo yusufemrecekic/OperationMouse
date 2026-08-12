@@ -6,9 +6,9 @@ Networked Movement Foundation
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework and two-player spawn / possession verification (PASSED)
+Completed: Phase 1 multiplayer framework and Phase 2 Enhanced Input + basic replicated movement (PASSED)
 
-Current: Phase 2 final mouse-look correction; manual verification pending
+Current: Phase 2 complete; pull request review
 
 Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started)
 
@@ -32,6 +32,8 @@ Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started
 - `OperationMouseEditor` Win64 Development build and headless input mapping smoke test passed for Phase 2.
 - Manual Phase 2 Listen Server test passed for Host/Client movement, camera control, ownership isolation, and bidirectional movement replication.
 - Conventional vertical mouse-look correction completed; `OperationMouse` Win64 Development build passed.
+- Final Phase 2 Host/Client test passed with conventional mouse directions, working WASD, bidirectional movement visibility, and local-only camera ownership.
+- Phase 1 network test map configured as the Editor startup map for continued multiplayer iteration.
 
 ## Repository
 
@@ -44,7 +46,6 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
-- Phase 2 vertical mouse-look correction requires final manual Host/Client verification before the phase can be marked PASSED.
 
 ## Technical Decisions
 
@@ -68,7 +69,7 @@ Branch: feature/basic-movement
 
 Main files/assets: `AOMMouseCharacter`, `IA_Move`, `IA_Look`, `IMC_Gameplay`, and Phase 1 network test map
 
-Status: Phase 2 multiplayer movement verified; corrected conventional mouse-look direction awaiting final manual verification
+Status: Phase 2 PASSED; pull request ready for review
 
 ## Deferred / Not V1
 
