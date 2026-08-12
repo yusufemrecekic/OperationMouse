@@ -7,12 +7,14 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 AOMMouseCharacter::AOMMouseCharacter()
@@ -25,6 +27,8 @@ AOMMouseCharacter::AOMMouseCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 500.0, 0.0);
+	GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	PlaceholderVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderVisual"));
 	PlaceholderVisual->SetupAttachment(GetCapsuleComponent());
@@ -67,6 +71,33 @@ AOMMouseCharacter::AOMMouseCharacter()
 	{
 		LookAction = LookActionAsset.Object;
 	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> JumpActionAsset(
+		TEXT("/Game/OperationMouse/Input/IA_Jump.IA_Jump"));
+	if (JumpActionAsset.Succeeded())
+	{
+		JumpAction = JumpActionAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> SprintActionAsset(
+		TEXT("/Game/OperationMouse/Input/IA_Sprint.IA_Sprint"));
+	if (SprintActionAsset.Succeeded())
+	{
+		SprintAction = SprintActionAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> CrouchActionAsset(
+		TEXT("/Game/OperationMouse/Input/IA_Crouch.IA_Crouch"));
+	if (CrouchActionAsset.Succeeded())
+	{
+		CrouchAction = CrouchActionAsset.Object;
+	}
+}
+
+void AOMMouseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	SetSprinting(false);
 }
 
 void AOMMouseCharacter::NotifyControllerChanged()
@@ -120,7 +151,28 @@ void AOMMouseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AOMMouseCharacter::Look);
 	}
 
-	if (!MoveAction || !LookAction)
+	if (JumpAction)
+	{
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AOMMouseCharacter::StartJump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AOMMouseCharacter::StopJump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Canceled, this, &AOMMouseCharacter::StopJump);
+	}
+
+	if (SprintAction)
+	{
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AOMMouseCharacter::StartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AOMMouseCharacter::StopSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &AOMMouseCharacter::StopSprint);
+	}
+
+	if (CrouchAction)
+	{
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AOMMouseCharacter::StartCrouch);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AOMMouseCharacter::StopCrouch);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Canceled, this, &AOMMouseCharacter::StopCrouch);
+	}
+
+	if (!MoveAction || !LookAction || !JumpAction || !SprintAction || !CrouchAction)
 	{
 		UE_LOG(LogOperationMouse, Warning, TEXT("Enhanced Input actions are incomplete on %s"), *GetName());
 	}
@@ -149,6 +201,115 @@ void AOMMouseCharacter::Look(const FInputActionValue& Value)
 
 	AddControllerYawInput(LookInput.X);
 	AddControllerPitchInput(-LookInput.Y);
+}
+
+void AOMMouseCharacter::StartJump()
+{
+	bJumpInputHeld = true;
+
+	if (CanJump())
+	{
+		BufferedJumpExpiration = -1.0;
+		Jump();
+		return;
+	}
+
+	if (const UWorld* World = GetWorld())
+	{
+		BufferedJumpExpiration = World->GetTimeSeconds() + JumpInputBufferSeconds;
+	}
+}
+
+void AOMMouseCharacter::StopJump()
+{
+	bJumpInputHeld = false;
+	StopJumping();
+}
+
+void AOMMouseCharacter::StartSprint()
+{
+	SetSprinting(true);
+
+	if (!HasAuthority())
+	{
+		ServerSetSprinting(true);
+	}
+}
+
+void AOMMouseCharacter::StopSprint()
+{
+	SetSprinting(false);
+
+	if (!HasAuthority())
+	{
+		ServerSetSprinting(false);
+	}
+}
+
+void AOMMouseCharacter::StartCrouch()
+{
+	Crouch();
+}
+
+void AOMMouseCharacter::StopCrouch()
+{
+	UnCrouch();
+}
+
+void AOMMouseCharacter::SetSprinting(bool bNewSprinting)
+{
+	bIsSprinting = bNewSprinting;
+	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : NormalWalkSpeed;
+}
+
+void AOMMouseCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)
+{
+	SetSprinting(bNewSprinting);
+}
+
+void AOMMouseCharacter::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	const bool bWasGrounded = PreviousMovementMode == MOVE_Walking || PreviousMovementMode == MOVE_NavWalking;
+
+	if (bWasGrounded && MovementComponent->IsFalling())
+	{
+		if (const UWorld* World = GetWorld())
+		{
+			CoyoteTimeExpiration = World->GetTimeSeconds() + CoyoteTimeSeconds;
+		}
+	}
+	else if (MovementComponent->IsMovingOnGround())
+	{
+		CoyoteTimeExpiration = -1.0;
+		TryConsumeBufferedJump();
+	}
+}
+
+bool AOMMouseCharacter::CanJumpWhileFalling() const
+{
+	const UWorld* World = GetWorld();
+	return World && World->GetTimeSeconds() <= CoyoteTimeExpiration;
+}
+
+void AOMMouseCharacter::TryConsumeBufferedJump()
+{
+	const UWorld* World = GetWorld();
+	if (!World || World->GetTimeSeconds() > BufferedJumpExpiration || !CanJump())
+	{
+		BufferedJumpExpiration = -1.0;
+		return;
+	}
+
+	BufferedJumpExpiration = -1.0;
+	Jump();
+
+	if (!bJumpInputHeld)
+	{
+		World->GetTimerManager().SetTimerForNextTick(this, &AOMMouseCharacter::StopJumping);
+	}
 }
 
 void AOMMouseCharacter::PossessedBy(AController* NewController)
