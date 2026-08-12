@@ -91,6 +91,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float SprintSpeed = 900.0f;
 
+	/** How strongly built-in CharacterMovement acceleration responds to WASD while falling. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement|Air", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
+	float AirControlStrength = 1.0f;
+
 	/** Grace period after leaving a ledge during which a jump is still accepted. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement|Jump", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float CoyoteTimeSeconds = 0.15f;

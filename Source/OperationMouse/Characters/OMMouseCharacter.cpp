@@ -29,6 +29,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 500.0, 0.0);
 	GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	GetCharacterMovement()->AirControl = AirControlStrength;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	PlaceholderVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderVisual"));

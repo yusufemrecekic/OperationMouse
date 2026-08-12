@@ -10,7 +10,7 @@ Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replica
 
 Current: Phase 4 Basic Mantle implementation complete; manual Host/Client verification pending
 
-Next: Phase 4 focused two-player Listen Server PIE retest after first-playtest fixes
+Next: Phase 4 focused two-player Listen Server PIE retest of responsive airborne steering
 
 ## Completed
 
@@ -46,6 +46,7 @@ Next: Phase 4 focused two-player Listen Server PIE retest after first-playtest f
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; headless Unreal validation confirmed the new map, traversal component, and preserved Phase 2/3 input mappings.
 - The first Phase 4 manual Host/Client playtest confirmed low/high mantle, too-high rejection, network visibility, and existing movement, but found camera-direction sensitivity, a bypassable blocked-clearance fixture, and a subtle block-transition hitch.
 - Focused Phase 4 fixes now use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures. Manual Host/Client retest remains pending.
+- The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering; editable built-in AirControl is now 1.0 and awaits Host/Client retest before Phase 4 can pass.
 
 ## Repository
 
@@ -58,7 +59,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
-- Phase 4 first-playtest fixes require manual Host/Client PIE confirmation, including whether the subtle mantle/edge transition hitch is no longer perceptible.
+- Phase 4 mantle fixes passed focused manual testing; final Phase 4 approval is pending Host/Client verification of the airborne steering improvement and locomotion regressions.
 
 ## Technical Decisions
 
