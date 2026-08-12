@@ -15,6 +15,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "TimerManager.h"
+#include "../Traversal/OMTraversalComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 AOMMouseCharacter::AOMMouseCharacter()
@@ -28,6 +29,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 500.0, 0.0);
 	GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+	GetCharacterMovement()->AirControl = AirControlStrength;
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 
 	PlaceholderVisual = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlaceholderVisual"));
@@ -50,6 +52,8 @@ AOMMouseCharacter::AOMMouseCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	TraversalComponent = CreateDefaultSubobject<UOMTraversalComponent>(TEXT("TraversalComponent"));
 
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> GameplayMappingContextAsset(
 		TEXT("/Game/OperationMouse/Input/IMC_Gameplay.IMC_Gameplay"));
@@ -206,6 +210,22 @@ void AOMMouseCharacter::Look(const FInputActionValue& Value)
 void AOMMouseCharacter::StartJump()
 {
 	bJumpInputHeld = true;
+	if (TraversalComponent && TraversalComponent->IsMantling())
+	{
+		return;
+	}
+
+	if (TraversalComponent && TraversalComponent->TryMantle())
+	{
+		BufferedJumpExpiration = -1.0;
+		return;
+	}
+
+	AttemptJumpOrBuffer();
+}
+
+void AOMMouseCharacter::AttemptJumpOrBuffer()
+{
 
 	if (CanJump())
 	{
@@ -218,6 +238,11 @@ void AOMMouseCharacter::StartJump()
 	{
 		BufferedJumpExpiration = World->GetTimeSeconds() + JumpInputBufferSeconds;
 	}
+}
+
+void AOMMouseCharacter::HandleMantleRejected()
+{
+	AttemptJumpOrBuffer();
 }
 
 void AOMMouseCharacter::StopJump()
