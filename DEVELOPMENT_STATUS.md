@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Networked Movement Foundation
+Core Locomotion
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework and Phase 2 Enhanced Input + basic replicated movement (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, and Phase 3 core locomotion (PASSED)
 
-Current: Phase 2 complete; pull request review
+Current: Phase 3 complete; Pull Request Review
 
-Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started)
+Next: Pull request review and merge decision; Phase 4 not started
 
 ## Completed
 
@@ -34,6 +34,12 @@ Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started
 - Conventional vertical mouse-look correction completed; `OperationMouse` Win64 Development build passed.
 - Final Phase 2 Host/Client test passed with conventional mouse directions, working WASD, bidirectional movement visibility, and local-only camera ownership.
 - Phase 1 network test map configured as the Editor startup map for continued multiplayer iteration.
+- Phase 3 Enhanced Input actions and mappings implemented: Space jump, Left Shift sprint, and Left Ctrl crouch.
+- Built-in Character jump/crouch support extended with editable 0.15-second Coyote Time and Jump Input Buffer windows.
+- Editable normal/sprint speeds added while preserving built-in CharacterMovement replication and prediction.
+- A minimal raised locomotion test platform added to `L_Phase1_NetworkTest` for Coyote Time and Input Buffer checks.
+- `OperationMouseEditor` Win64 Development build and automated Phase 3 input asset/mapping validation passed.
+- Manual Phase 3 two-player Listen Server PIE verification passed on Host and Client: WASD, mouse camera, jump, sprint, crouch, Coyote Time, Jump Input Buffer, bidirectional movement visibility, and local-only character ownership were verified with no blocking gameplay issue.
 
 ## Repository
 
@@ -63,13 +69,13 @@ Repository setup: Complete
 
 Developer: Unassigned
 
-System: Enhanced Input and Basic Replicated Movement
+System: Core Locomotion
 
-Branch: feature/basic-movement
+Branch: feature/core-locomotion
 
-Main files/assets: `AOMMouseCharacter`, `IA_Move`, `IA_Look`, `IMC_Gameplay`, and Phase 1 network test map
+Main files/assets: `AOMMouseCharacter`, `IA_Jump`, `IA_Sprint`, `IA_Crouch`, `IMC_Gameplay`, and Phase 1 network test map
 
-Status: Phase 2 PASSED; pull request ready for review
+Status: Phase 3 PASSED; Pull Request Review
 
 ## Deferred / Not V1
 

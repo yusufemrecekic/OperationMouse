@@ -24,10 +24,26 @@ public:
 	virtual void OnRep_Controller() override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode = 0) override;
+
+protected:
+	virtual void BeginPlay() override;
+	virtual bool CanJumpWhileFalling() const override;
 
 private:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void StartJump();
+	void StopJump();
+	void StartSprint();
+	void StopSprint();
+	void StartCrouch();
+	void StopCrouch();
+	void SetSprinting(bool bNewSprinting);
+	void TryConsumeBufferedJump();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetSprinting(bool bNewSprinting);
 
 	/** Temporary visible marker until a production mouse skeletal mesh is integrated. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Presentation", meta = (AllowPrivateAccess = "true"))
@@ -48,4 +64,34 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> JumpAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SprintAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> CrouchAction;
+
+	/** Normal movement speed in Unreal units per second. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float NormalWalkSpeed = 600.0f;
+
+	/** Movement speed while the sprint input is held. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float SprintSpeed = 900.0f;
+
+	/** Grace period after leaving a ledge during which a jump is still accepted. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement|Jump", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float CoyoteTimeSeconds = 0.15f;
+
+	/** Time a too-early jump press remains valid before landing. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement|Jump", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float JumpInputBufferSeconds = 0.15f;
+
+	double CoyoteTimeExpiration = -1.0;
+	double BufferedJumpExpiration = -1.0;
+	bool bJumpInputHeld = false;
+	bool bIsSprinting = false;
 };
