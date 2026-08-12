@@ -8,7 +8,7 @@ Networked Movement Foundation
 
 Completed: Phase 1 multiplayer framework and two-player spawn / possession verification (PASSED)
 
-Current: Phase 2 Enhanced Input and basic replicated movement implementation complete; manual multiplayer verification pending
+Current: Phase 2 final mouse-look correction; manual verification pending
 
 Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started)
 
@@ -30,6 +30,8 @@ Next: Phase 3 - Jump + Sprint + Crouch + Coyote Time + Input Buffer (not started
 - Phase 1 network test map created at `Content/OperationMouse/Maps/L_Phase1_NetworkTest.umap`.
 - Phase 2 Enhanced Input assets, camera-relative WASD movement, mouse look, and third-person camera implemented.
 - `OperationMouseEditor` Win64 Development build and headless input mapping smoke test passed for Phase 2.
+- Manual Phase 2 Listen Server test passed for Host/Client movement, camera control, ownership isolation, and bidirectional movement replication.
+- Conventional vertical mouse-look correction completed; `OperationMouse` Win64 Development build passed.
 
 ## Repository
 
@@ -42,7 +44,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
-- Phase 2 movement replication still requires manual two-player Listen Server PIE verification.
+- Phase 2 vertical mouse-look correction requires final manual Host/Client verification before the phase can be marked PASSED.
 
 ## Technical Decisions
 
@@ -66,7 +68,7 @@ Branch: feature/basic-movement
 
 Main files/assets: `AOMMouseCharacter`, `IA_Move`, `IA_Look`, `IMC_Gameplay`, and Phase 1 network test map
 
-Status: Phase 2 implementation, build, and automated smoke test complete; manual multiplayer verification pending
+Status: Phase 2 multiplayer movement verified; corrected conventional mouse-look direction awaiting final manual verification
 
 ## Deferred / Not V1
 

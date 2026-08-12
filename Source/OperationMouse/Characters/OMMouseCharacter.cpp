@@ -148,7 +148,7 @@ void AOMMouseCharacter::Look(const FInputActionValue& Value)
 	const FVector2D LookInput = Value.Get<FVector2D>();
 
 	AddControllerYawInput(LookInput.X);
-	AddControllerPitchInput(LookInput.Y);
+	AddControllerPitchInput(-LookInput.Y);
 }
 
 void AOMMouseCharacter::PossessedBy(AController* NewController)
