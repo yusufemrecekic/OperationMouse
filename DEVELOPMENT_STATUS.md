@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Basic Mantle
+Interaction Foundation
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
 
-Current: Pull Request Review - Phase 4 Basic Mantle PASSED
+Current: Phase 5 Interaction Foundation implementation complete; manual Host/Client verification pending
 
-Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
+Next: Phase 5 two-player Listen Server PIE verification
 
 ## Completed
 
@@ -48,6 +48,8 @@ Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
 - Focused Phase 4 fixes use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures.
 - The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering, so editable built-in AirControl was set to 1.0 for the final retest.
 - Final Phase 4 two-player Listen Server PIE verification PASSED on Host and Client: Basic Mantle, Low/High mantle, Too High rejection, Blocked Clearance rejection, controlled Character-forward detection, airborne reverse/strafe/camera-relative steering, ownership isolation, and bidirectional mantle/movement visibility were verified with no blocking gameplay issue.
+- Phase 5 Interaction Foundation implemented with `UOMInteractionComponent`, `UOMInteractableInterface`, local sphere-sweep focus, local prompt/progress UI, Instant and server-timed Hold flows, cancellation, authoritative distance/state/line-of-sight validation, exclusive contention, and replicated persistent test-actor state.
+- Added `IA_Interact` on E and dedicated `L_Phase5_InteractionTest` coverage for Instant, Hold/cancel/walk-away, Exclusive contention, two PlayerStarts, open movement space, and preserved mantle regression fixtures.
 
 ## Repository
 
@@ -61,6 +63,7 @@ Repository setup: Complete
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
 - No blocking Phase 4 gameplay issue remains after final Host/Client verification.
+- Phase 5 implementation requires final manual Host/Client PIE verification, including local-only prompts, Hold cancellation, and near-simultaneous Exclusive contention.
 
 ## Technical Decisions
 
@@ -79,13 +82,13 @@ Repository setup: Complete
 
 Developer: Unassigned
 
-System: Basic Mantle
+System: Interaction Foundation
 
-Branch: feature/basic-mantle
+Branch: feature/interaction-foundation
 
-Main files/assets: `UOMTraversalComponent`, `AOMMouseCharacter`, and `L_Phase4_MantleTest`
+Main files/assets: `UOMInteractionComponent`, `UOMInteractableInterface`, `AOMTestInteractableActor`, `IA_Interact`, `IMC_Gameplay`, and `L_Phase5_InteractionTest`
 
-Status: PULL REQUEST REVIEW - PHASE 4 PASSED - PHASE 5 NOT STARTED
+Status: PHASE 5 IMPLEMENTATION COMPLETE - MANUAL HOST/CLIENT VERIFICATION PENDING
 
 ## Deferred / Not V1
 

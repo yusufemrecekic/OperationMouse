@@ -14,6 +14,7 @@
 #include "InputAction.h"
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
+#include "../Interaction/OMInteractionComponent.h"
 #include "TimerManager.h"
 #include "../Traversal/OMTraversalComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -54,6 +55,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	TraversalComponent = CreateDefaultSubobject<UOMTraversalComponent>(TEXT("TraversalComponent"));
+	InteractionComponent = CreateDefaultSubobject<UOMInteractionComponent>(TEXT("InteractionComponent"));
 
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> GameplayMappingContextAsset(
 		TEXT("/Game/OperationMouse/Input/IMC_Gameplay.IMC_Gameplay"));
@@ -95,6 +97,13 @@ AOMMouseCharacter::AOMMouseCharacter()
 	if (CrouchActionAsset.Succeeded())
 	{
 		CrouchAction = CrouchActionAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> InteractActionAsset(
+		TEXT("/Game/OperationMouse/Input/IA_Interact.IA_Interact"));
+	if (InteractActionAsset.Succeeded())
+	{
+		InteractAction = InteractActionAsset.Object;
 	}
 }
 
@@ -176,7 +185,14 @@ void AOMMouseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Canceled, this, &AOMMouseCharacter::StopCrouch);
 	}
 
-	if (!MoveAction || !LookAction || !JumpAction || !SprintAction || !CrouchAction)
+	if (InteractAction)
+	{
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AOMMouseCharacter::StartInteraction);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &AOMMouseCharacter::StopInteraction);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Canceled, this, &AOMMouseCharacter::StopInteraction);
+	}
+
+	if (!MoveAction || !LookAction || !JumpAction || !SprintAction || !CrouchAction || !InteractAction)
 	{
 		UE_LOG(LogOperationMouse, Warning, TEXT("Enhanced Input actions are incomplete on %s"), *GetName());
 	}
@@ -279,6 +295,22 @@ void AOMMouseCharacter::StartCrouch()
 void AOMMouseCharacter::StopCrouch()
 {
 	UnCrouch();
+}
+
+void AOMMouseCharacter::StartInteraction()
+{
+	if (InteractionComponent)
+	{
+		InteractionComponent->BeginInteractionInput();
+	}
+}
+
+void AOMMouseCharacter::StopInteraction()
+{
+	if (InteractionComponent)
+	{
+		InteractionComponent->EndInteractionInput();
+	}
 }
 
 void AOMMouseCharacter::SetSprinting(bool bNewSprinting)
