@@ -35,6 +35,10 @@ struct FOMReplicatedMantleState
 
 	UPROPERTY()
 	EOMMantleType MantleType = EOMMantleType::Low;
+
+	/** Horizontal velocity restored when the short mantle transition completes. */
+	UPROPERTY()
+	FVector_NetQuantize10 ExitVelocity = FVector::ZeroVector;
 };
 
 /** Detects and performs short, server-validated mantle transitions on static geometry. */
@@ -67,6 +71,7 @@ private:
 
 	bool CanStartMantle() const;
 	bool FindMantleCandidate(FMantleCandidate& OutCandidate) const;
+	bool FindMantleCandidateInDirection(const FVector& DetectionDirection, FMantleCandidate& OutCandidate) const;
 	void StartValidatedMantle(const FMantleCandidate& Candidate);
 	void FinishMantle();
 	void ApplyMantlePosition(float Alpha);
@@ -91,6 +96,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "1.0"))
 	float ForwardDetectionDistance = 85.0f;
 
+	/** Mantle checks the Character-facing direction plus both sides of this forward cone. */
+	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "0.0", ClampMax = "60.0"))
+	float DetectionHalfAngleDegrees = 30.0f;
+
 	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "1.0"))
 	float MinimumMantleHeight = 45.0f;
 
@@ -109,9 +118,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "0.0"))
 	float LandingForwardOffset = 12.0f;
 
-	/** Small vertical separation used by destination and path clearance checks. */
+	/** Small amount removed from path sweeps to avoid treating floor contact as an obstruction. */
 	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "0.0"))
-	float ClearanceMargin = 3.0f;
+	float ClearanceMargin = 2.0f;
+
+	/** Tiny floor separation at the destination; kept small to avoid a visible floor-settling snap. */
+	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "0.0", ClampMax = "3.0"))
+	float LandingFloorOffset = 0.5f;
 
 	/** Minimum upward normal accepted as a walkable top surface. */
 	UPROPERTY(EditAnywhere, Category = "Mantle|Detection", meta = (ClampMin = "0.0", ClampMax = "1.0"))

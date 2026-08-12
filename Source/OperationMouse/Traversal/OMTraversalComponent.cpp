@@ -86,6 +86,42 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 		return false;
 	}
 
+	const FVector CharacterForward = OwnerCharacter->GetActorForwardVector().GetSafeNormal2D();
+	if (CharacterForward.IsNearlyZero())
+	{
+		return false;
+	}
+
+	if (FindMantleCandidateInDirection(CharacterForward, OutCandidate))
+	{
+		return true;
+	}
+
+	if (DetectionHalfAngleDegrees <= 0.0f)
+	{
+		return false;
+	}
+
+	const FVector LeftDirection = CharacterForward.RotateAngleAxis(-DetectionHalfAngleDegrees, FVector::UpVector);
+	if (FindMantleCandidateInDirection(LeftDirection, OutCandidate))
+	{
+		return true;
+	}
+
+	const FVector RightDirection = CharacterForward.RotateAngleAxis(DetectionHalfAngleDegrees, FVector::UpVector);
+	return FindMantleCandidateInDirection(RightDirection, OutCandidate);
+}
+
+bool UOMTraversalComponent::FindMantleCandidateInDirection(
+	const FVector& DetectionDirection,
+	FMantleCandidate& OutCandidate) const
+{
+	const FVector ForwardDirection = DetectionDirection.GetSafeNormal2D();
+	if (ForwardDirection.IsNearlyZero())
+	{
+		return false;
+	}
+
 	const UWorld* World = GetWorld();
 	const UCapsuleComponent* Capsule = OwnerCharacter->GetCapsuleComponent();
 	if (!World || !Capsule)
@@ -97,8 +133,6 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 	const float CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
 	const FVector CharacterLocation = OwnerCharacter->GetActorLocation();
 	const float CharacterBaseZ = CharacterLocation.Z - CapsuleHalfHeight;
-	const FRotator FacingRotation(0.0f, OwnerCharacter->GetControlRotation().Yaw, 0.0f);
-	const FVector ForwardDirection = FacingRotation.Vector().GetSafeNormal2D();
 
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OMMantleDetection), false, OwnerCharacter);
 	QueryParams.bReturnPhysicalMaterial = false;
@@ -161,18 +195,15 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 		return false;
 	}
 
-	const FVector TargetLocation = TopHit.ImpactPoint + FVector::UpVector * (CapsuleHalfHeight + ClearanceMargin);
+	const FVector TargetLocation = TopHit.ImpactPoint + FVector::UpVector * (CapsuleHalfHeight + LandingFloorOffset);
 	const float MaximumHorizontalReach = ForwardDetectionDistance + CapsuleRadius + LandingForwardOffset;
 	if (FVector::Dist2D(CharacterLocation, TargetLocation) > MaximumHorizontalReach)
 	{
 		return false;
 	}
 
-	const FCollisionShape ClearanceCapsule = FCollisionShape::MakeCapsule(
-		FMath::Max(1.0f, CapsuleRadius - ClearanceMargin),
-		FMath::Max(1.0f, CapsuleHalfHeight - ClearanceMargin));
-
-	if (World->OverlapBlockingTestByChannel(TargetLocation, FQuat::Identity, ECC_Pawn, ClearanceCapsule, QueryParams))
+	const FCollisionShape DestinationCapsule = FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight);
+	if (World->OverlapBlockingTestByChannel(TargetLocation, FQuat::Identity, ECC_Pawn, DestinationCapsule, QueryParams))
 	{
 		if (bDrawDebug)
 		{
@@ -180,6 +211,10 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 		}
 		return false;
 	}
+
+	const FCollisionShape PathCapsule = FCollisionShape::MakeCapsule(
+		FMath::Max(1.0f, CapsuleRadius - ClearanceMargin),
+		FMath::Max(1.0f, CapsuleHalfHeight - ClearanceMargin));
 
 	const FVector RaisedStart(CharacterLocation.X, CharacterLocation.Y, TargetLocation.Z);
 	FHitResult PathHit;
@@ -189,7 +224,7 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 		RaisedStart,
 		FQuat::Identity,
 		ECC_Pawn,
-		ClearanceCapsule,
+		PathCapsule,
 		QueryParams);
 	const bool bHorizontalPathBlocked = !bVerticalPathBlocked && World->SweepSingleByChannel(
 		PathHit,
@@ -197,7 +232,7 @@ bool UOMTraversalComponent::FindMantleCandidate(FMantleCandidate& OutCandidate) 
 		TargetLocation,
 		FQuat::Identity,
 		ECC_Pawn,
-		ClearanceCapsule,
+		PathCapsule,
 		QueryParams);
 
 	if (bVerticalPathBlocked || bHorizontalPathBlocked)
@@ -216,6 +251,9 @@ void UOMTraversalComponent::StartValidatedMantle(const FMantleCandidate& Candida
 	check(GetOwner()->HasAuthority());
 
 	UCharacterMovementComponent* MovementComponent = OwnerCharacter->GetCharacterMovement();
+	FVector ExitVelocity = MovementComponent->Velocity;
+	ExitVelocity.Z = 0.0f;
+	ExitVelocity = ExitVelocity.GetClampedToMaxSize(MovementComponent->MaxWalkSpeed);
 	MovementComponent->StopMovementImmediately();
 	MovementComponent->DisableMovement();
 
@@ -225,6 +263,7 @@ void UOMTraversalComponent::StartValidatedMantle(const FMantleCandidate& Candida
 	MantleState.ServerStartTime = GetSynchronizedTimeSeconds();
 	MantleState.Duration = Candidate.MantleType == EOMMantleType::High ? HighMantleDuration : LowMantleDuration;
 	MantleState.MantleType = Candidate.MantleType;
+	MantleState.ExitVelocity = ExitVelocity;
 
 	SetComponentTickEnabled(true);
 	GetOwner()->ForceNetUpdate();
@@ -289,7 +328,9 @@ void UOMTraversalComponent::FinishMantle()
 	check(GetOwner()->HasAuthority());
 
 	OwnerCharacter->SetActorLocation(MantleState.TargetLocation, false, nullptr, ETeleportType::None);
-	OwnerCharacter->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	UCharacterMovementComponent* MovementComponent = OwnerCharacter->GetCharacterMovement();
+	MovementComponent->SetMovementMode(MOVE_Walking);
+	MovementComponent->Velocity = MantleState.ExitVelocity;
 	MantleState.bIsActive = false;
 	SetComponentTickEnabled(false);
 	GetOwner()->ForceNetUpdate();
@@ -317,6 +358,7 @@ void UOMTraversalComponent::OnRep_MantleState()
 			{
 				OwnerCharacter->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 			}
+			OwnerCharacter->GetCharacterMovement()->Velocity = MantleState.ExitVelocity;
 		}
 		SetComponentTickEnabled(false);
 	}

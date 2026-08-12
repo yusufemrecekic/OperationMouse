@@ -10,7 +10,7 @@ Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replica
 
 Current: Phase 4 Basic Mantle implementation complete; manual Host/Client verification pending
 
-Next: Phase 4 two-player Listen Server PIE verification
+Next: Phase 4 focused two-player Listen Server PIE retest after first-playtest fixes
 
 ## Completed
 
@@ -44,6 +44,8 @@ Next: Phase 4 two-player Listen Server PIE verification
 - Mantle requests are validated from the authoritative Character state on the server; a replicated start/target/time snapshot drives the short transition without per-frame RPCs or a custom CharacterMovementComponent.
 - Dedicated `L_Phase4_MantleTest` map created with labeled low, high, too-high, blocked-clearance, and normal-jump test areas.
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; headless Unreal validation confirmed the new map, traversal component, and preserved Phase 2/3 input mappings.
+- The first Phase 4 manual Host/Client playtest confirmed low/high mantle, too-high rejection, network visibility, and existing movement, but found camera-direction sensitivity, a bypassable blocked-clearance fixture, and a subtle block-transition hitch.
+- Focused Phase 4 fixes now use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures. Manual Host/Client retest remains pending.
 
 ## Repository
 
@@ -56,6 +58,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
+- Phase 4 first-playtest fixes require manual Host/Client PIE confirmation, including whether the subtle mantle/edge transition hitch is no longer perceptible.
 
 ## Technical Decisions
 
