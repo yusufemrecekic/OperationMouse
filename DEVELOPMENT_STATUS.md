@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Core Locomotion
+Basic Mantle
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, and Phase 3 core locomotion (PASSED)
 
-Current: Phase 3 complete; Pull Request Review
+Current: Phase 4 Basic Mantle implementation complete; manual Host/Client verification pending
 
-Next: Pull request review and merge decision; Phase 4 not started
+Next: Phase 4 two-player Listen Server PIE verification
 
 ## Completed
 
@@ -40,6 +40,10 @@ Next: Pull request review and merge decision; Phase 4 not started
 - A minimal raised locomotion test platform added to `L_Phase1_NetworkTest` for Coyote Time and Input Buffer checks.
 - `OperationMouseEditor` Win64 Development build and automated Phase 3 input asset/mapping validation passed.
 - Manual Phase 3 two-player Listen Server PIE verification passed on Host and Client: WASD, mouse camera, jump, sprint, crouch, Coyote Time, Jump Input Buffer, bidirectional movement visibility, and local-only character ownership were verified with no blocking gameplay issue.
+- Phase 4 basic static-surface mantle prototype implemented in `UOMTraversalComponent` with low/high profiles, obstacle and top-surface traces, slope/range checks, destination capsule clearance, and transition-path validation.
+- Mantle requests are validated from the authoritative Character state on the server; a replicated start/target/time snapshot drives the short transition without per-frame RPCs or a custom CharacterMovementComponent.
+- Dedicated `L_Phase4_MantleTest` map created with labeled low, high, too-high, blocked-clearance, and normal-jump test areas.
+- `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; headless Unreal validation confirmed the new map, traversal component, and preserved Phase 2/3 input mappings.
 
 ## Repository
 
@@ -69,13 +73,13 @@ Repository setup: Complete
 
 Developer: Unassigned
 
-System: Core Locomotion
+System: Basic Mantle
 
-Branch: feature/core-locomotion
+Branch: feature/basic-mantle
 
-Main files/assets: `AOMMouseCharacter`, `IA_Jump`, `IA_Sprint`, `IA_Crouch`, `IMC_Gameplay`, and Phase 1 network test map
+Main files/assets: `UOMTraversalComponent`, `AOMMouseCharacter`, and `L_Phase4_MantleTest`
 
-Status: Phase 3 PASSED; Pull Request Review
+Status: Phase 4 IMPLEMENTATION COMPLETE - MANUAL HOST/CLIENT VERIFICATION PENDING
 
 ## Deferred / Not V1
 

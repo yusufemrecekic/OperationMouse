@@ -8,6 +8,7 @@ class UStaticMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
+class UOMTraversalComponent;
 class USpringArmComponent;
 struct FInputActionValue;
 
@@ -31,10 +32,14 @@ protected:
 	virtual bool CanJumpWhileFalling() const override;
 
 private:
+	friend class UOMTraversalComponent;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void StartJump();
 	void StopJump();
+	void AttemptJumpOrBuffer();
+	void HandleMantleRejected();
 	void StartSprint();
 	void StopSprint();
 	void StartCrouch();
@@ -55,6 +60,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** Handles mantle detection, server validation, and the short traversal transition. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Traversal", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOMTraversalComponent> TraversalComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> GameplayMappingContext;
