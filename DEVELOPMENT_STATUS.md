@@ -6,11 +6,11 @@ Core Locomotion
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework and Phase 2 Enhanced Input + basic replicated movement (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, and Phase 3 core locomotion (PASSED)
 
-Current: Phase 3 Jump + Sprint + Crouch + Coyote Time + Input Buffer implemented; manual verification pending
+Current: Phase 3 complete; Pull Request Review
 
-Next: Phase 3 two-player Listen Server PIE verification
+Next: Pull request review and merge decision; Phase 4 not started
 
 ## Completed
 
@@ -39,6 +39,7 @@ Next: Phase 3 two-player Listen Server PIE verification
 - Editable normal/sprint speeds added while preserving built-in CharacterMovement replication and prediction.
 - A minimal raised locomotion test platform added to `L_Phase1_NetworkTest` for Coyote Time and Input Buffer checks.
 - `OperationMouseEditor` Win64 Development build and automated Phase 3 input asset/mapping validation passed.
+- Manual Phase 3 two-player Listen Server PIE verification passed on Host and Client: WASD, mouse camera, jump, sprint, crouch, Coyote Time, Jump Input Buffer, bidirectional movement visibility, and local-only character ownership were verified with no blocking gameplay issue.
 
 ## Repository
 
@@ -74,7 +75,7 @@ Branch: feature/core-locomotion
 
 Main files/assets: `AOMMouseCharacter`, `IA_Jump`, `IA_Sprint`, `IA_Crouch`, `IMC_Gameplay`, and Phase 1 network test map
 
-Status: Phase 3 implementation complete; manual Host/Client verification pending
+Status: Phase 3 PASSED; Pull Request Review
 
 ## Deferred / Not V1
 
