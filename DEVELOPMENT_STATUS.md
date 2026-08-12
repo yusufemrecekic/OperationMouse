@@ -6,11 +6,11 @@ Basic Mantle
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, and Phase 3 core locomotion (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
 
-Current: Phase 4 Basic Mantle implementation complete; manual Host/Client verification pending
+Current: Pull Request Review - Phase 4 Basic Mantle PASSED
 
-Next: Phase 4 focused two-player Listen Server PIE retest of responsive airborne steering
+Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
 
 ## Completed
 
@@ -45,8 +45,9 @@ Next: Phase 4 focused two-player Listen Server PIE retest of responsive airborne
 - Dedicated `L_Phase4_MantleTest` map created with labeled low, high, too-high, blocked-clearance, and normal-jump test areas.
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; headless Unreal validation confirmed the new map, traversal component, and preserved Phase 2/3 input mappings.
 - The first Phase 4 manual Host/Client playtest confirmed low/high mantle, too-high rejection, network visibility, and existing movement, but found camera-direction sensitivity, a bypassable blocked-clearance fixture, and a subtle block-transition hitch.
-- Focused Phase 4 fixes now use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures. Manual Host/Client retest remains pending.
-- The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering; editable built-in AirControl is now 1.0 and awaits Host/Client retest before Phase 4 can pass.
+- Focused Phase 4 fixes use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures.
+- The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering, so editable built-in AirControl was set to 1.0 for the final retest.
+- Final Phase 4 two-player Listen Server PIE verification PASSED on Host and Client: Basic Mantle, Low/High mantle, Too High rejection, Blocked Clearance rejection, controlled Character-forward detection, airborne reverse/strafe/camera-relative steering, ownership isolation, and bidirectional mantle/movement visibility were verified with no blocking gameplay issue.
 
 ## Repository
 
@@ -59,7 +60,7 @@ Repository setup: Complete
 
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
-- Phase 4 mantle fixes passed focused manual testing; final Phase 4 approval is pending Host/Client verification of the airborne steering improvement and locomotion regressions.
+- No blocking Phase 4 gameplay issue remains after final Host/Client verification.
 
 ## Technical Decisions
 
@@ -72,6 +73,7 @@ Repository setup: Complete
 - Save data will be separated from the save-management subsystem.
 - Authoritative mission logic will be separated from replicated public mission state.
 - Gameplay classes will be created only when the active milestone requires them.
+- Phase 4 prototype mantle intentionally uses Character physical forward direction; mantle while the camera alone looks backward is accepted for now and may receive movement-intent refinement only in a later reviewed scope.
 
 ## Active Work
 
@@ -83,7 +85,7 @@ Branch: feature/basic-mantle
 
 Main files/assets: `UOMTraversalComponent`, `AOMMouseCharacter`, and `L_Phase4_MantleTest`
 
-Status: Phase 4 IMPLEMENTATION COMPLETE - MANUAL HOST/CLIENT VERIFICATION PENDING
+Status: PULL REQUEST REVIEW - PHASE 4 PASSED - PHASE 5 NOT STARTED
 
 ## Deferred / Not V1
 
