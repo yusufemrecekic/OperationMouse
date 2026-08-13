@@ -8,9 +8,9 @@ GDD-Independent Project Validation Tooling
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
 
-Current: Automated project health and regression tooling implementation
+Current: Automated project health and regression tooling self-validation complete; review pending
 
-Next: Validate and review the tooling branch; GDD-dependent Phase 5 gameplay remains NOT STARTED
+Next: Review the tooling branch; no Pull Request has been created and GDD-dependent Phase 5 gameplay remains NOT STARTED
 
 ## Completed
 
@@ -50,6 +50,7 @@ Next: Validate and review the tooling branch; GDD-dependent Phase 5 gameplay rem
 - Final Phase 4 two-player Listen Server PIE verification PASSED on Host and Client: Basic Mantle, Low/High mantle, Too High rejection, Blocked Clearance rejection, controlled Character-forward detection, airborne reverse/strafe/camera-relative steering, ownership isolation, and bidirectional mantle/movement visibility were verified with no blocking gameplay issue.
 - GDD-independent QUICK/FULL project validation tooling added for repository/LFS hygiene, approved core classes, Enhanced Input, project content, maps, headless startup, and Win64 Development builds.
 - Beginner-facing validation and temporary Host/Client network-emulation instructions added; automated validation remains explicitly separate from manual multiplayer testing.
+- QUICK and FULL validation passed on a clean working tree; a controlled temporary missing-LFS-rule test correctly failed and passed again after exact restoration.
 
 ## Repository
 
@@ -87,7 +88,7 @@ Branch: feature/project-validation
 
 Main files/assets: `Scripts/ValidateProject.ps1`, `Scripts/Editor/validate_project_content.py`, and developer validation documentation
 
-Status: IMPLEMENTATION IN PROGRESS - PHASE 5 NOT STARTED
+Status: IMPLEMENTATION AND SELF-VALIDATION COMPLETE - REVIEW PENDING - PHASE 5 NOT STARTED
 
 ## Deferred / Not V1
 
