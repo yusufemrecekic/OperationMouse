@@ -14,6 +14,13 @@ RETARGET_FOLDER = "/Game/OperationMouse/Characters/Retarget"
 MAP_FOLDER = "/Game/OperationMouse/Characters/Prototype/Maps"
 
 
+def disable_interchange_fbx_import():
+    """Use the stable legacy FBX skeletal importer for the Mixamo prototype."""
+    unreal.SystemLibrary.execute_console_command(
+        None, "Interchange.FeatureFlags.Import.FBX 0")
+    unreal.log("OM_PROTOTYPE_IMPORT: legacy FBX importer requested")
+
+
 def ensure_directory(path):
     if not unreal.EditorAssetLibrary.does_directory_exist(path):
         unreal.EditorAssetLibrary.make_directory(path)
@@ -26,6 +33,7 @@ def import_mesh():
     task.destination_name = "SK_Mixamo_YBot"
     task.automated = True
     task.replace_existing = True
+    task.replace_existing_settings = True
     task.save = True
 
     options = unreal.FbxImportUI()
@@ -36,7 +44,17 @@ def import_mesh():
     options.import_materials = True
     options.import_textures = True
     options.create_physics_asset = False
-    options.skeletal_mesh_import_data.import_mesh_lods = False
+    mesh_data = options.skeletal_mesh_import_data
+    mesh_data.import_mesh_lods = False
+    mesh_data.set_editor_property("convert_scene", True)
+    mesh_data.set_editor_property("force_front_x_axis", False)
+    mesh_data.set_editor_property(
+        "import_translation", unreal.Vector(0.0, 0.0, 0.0))
+    mesh_data.set_editor_property(
+        "import_rotation", unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0))
+    mesh_data.set_editor_property("import_uniform_scale", 1.0)
+    mesh_data.set_editor_property("update_skeleton_reference_pose", False)
+    mesh_data.set_editor_property("use_t0_as_ref_pose", False)
     task.options = options
 
     unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
@@ -65,6 +83,7 @@ def import_animations(skeleton):
         task.destination_name = name
         task.automated = True
         task.replace_existing = True
+        task.replace_existing_settings = True
         task.save = True
 
         options = unreal.FbxImportUI()
@@ -136,7 +155,8 @@ def configure_character_blueprint(mesh, animation_blueprint):
     mesh_component = default_object.get_editor_property("mesh")
     mesh_component.set_skeletal_mesh_asset(mesh)
     mesh_component.set_editor_property("relative_location", unreal.Vector(0.0, 0.0, -96.0))
-    mesh_component.set_editor_property("relative_rotation", unreal.Rotator(0.0, -90.0, 0.0))
+    mesh_component.set_editor_property(
+        "relative_rotation", unreal.Rotator(roll=0.0, pitch=0.0, yaw=-90.0))
     mesh_component.set_editor_property("relative_scale3d", unreal.Vector(1.0, 1.0, 1.0))
     mesh_component.set_editor_property("animation_mode", unreal.AnimationMode.ANIMATION_BLUEPRINT)
     mesh_component.set_editor_property("anim_class", animation_blueprint.generated_class())
@@ -172,6 +192,7 @@ def create_test_map(game_mode_blueprint):
 
 
 def main():
+    disable_interchange_fbx_import()
     for folder in [MESH_FOLDER, ANIMATION_FOLDER, ANIM_BP_FOLDER, BLENDSPACE_FOLDER, BLUEPRINT_FOLDER, RETARGET_FOLDER, MAP_FOLDER]:
         ensure_directory(folder)
     mesh = import_mesh()

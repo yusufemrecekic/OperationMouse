@@ -8,7 +8,7 @@ Modular Prototype Character / Animation Layer
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
 
-Current: Mixamo Y Bot prototype character implementation complete; manual Host/Client visual verification pending
+Current: Mixamo Y Bot prototype character implementation corrected and locally verified; manual Host/Client gameplay verification pending
 
 Next: Manual Host/Client prototype character and animation verification; Phase 5 gameplay remains paused while the Production GDD is revised
 
@@ -55,6 +55,8 @@ Next: Manual Host/Client prototype character and animation verification; Phase 5
 - Dedicated `L_PrototypeCharacterTest` map created from the approved Phase 4 mantle test layout with two PlayerStarts and a prototype-only GameMode override.
 - Automated prototype asset validation passed: all assets load, all animations use the single Y Bot Skeleton, root motion is disabled, all Blueprints compile, and the test map retains multiplayer and mantle fixtures.
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; uncooked Editor game startup loaded `L_PrototypeCharacterTest`, selected `BP_OMGameMode_Prototype`, and spawned/possessed `BP_OMMouseCharacter_Prototype` successfully.
+- Clean no-AnimBP Y Bot reference-pose inspection confirmed a structurally normal upright humanoid; the apparent deformation came from applying `-90` degrees to Pitch through a positional `Rotator` constructor instead of explicitly applying it to Yaw.
+- The prototype mesh now uses an explicit `Yaw = -90` visual rotation with the existing `Z = -96` capsule alignment. All eight animation sequences were previewed individually without skeletal collapse, and a runtime AnimBP smoke test showed the character upright, intact, forward-facing, and grounded.
 
 ## Repository
 
@@ -68,7 +70,7 @@ Repository setup: Complete
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
 - No blocking Phase 4 gameplay issue remains after final Host/Client verification.
-- Mixamo import reports recoverable source warnings for missing smoothing-group metadata and bind poses; Unreal rebounded the prototype mesh/animations to the time-zero pose. Manual visual inspection is still required.
+- Mixamo import still reports recoverable source warnings for missing smoothing-group metadata and bind poses, but clean Reference Pose, all eight individual animation previews, automated asset validation, and the runtime AnimBP smoke test are visually structurally correct.
 - Prototype locomotion and mesh/capsule alignment require final two-player PIE visual verification before a Pull Request.
 
 ## Technical Decisions
@@ -97,7 +99,7 @@ Branch: feature/prototype-character
 
 Main files/assets: `UOMAnimInstance`, `ABP_OMPrototypeLocomotion`, `BP_OMMouseCharacter_Prototype`, `BP_OMGameMode_Prototype`, Mixamo prototype assets, and `L_PrototypeCharacterTest`
 
-Status: IMPLEMENTATION AND AUTOMATED VALIDATION PASSED - MANUAL HOST/CLIENT VISUAL VERIFICATION PENDING - PHASE 5 PAUSED
+Status: IMPLEMENTATION COMPLETE - MANUAL HOST/CLIENT VISUAL VERIFICATION PENDING - PHASE 5 PAUSED
 
 ## Deferred / Not V1
 
