@@ -39,8 +39,11 @@ skeleton_assets = [path for path in all_assets if unreal.load_asset(path).__clas
 require(len(skeleton_assets) == 1, f"exactly one prototype Skeleton exists ({len(skeleton_assets)})")
 
 animation_blueprint = unreal.load_asset(ANIM_BP_PATH)
+native_anim_class = unreal.load_class(None, "/Script/OperationMouse.OMAnimInstance")
+require(native_anim_class is not None, "native UOMAnimInstance class is present in the loaded Editor module")
 require(animation_blueprint is not None, "prototype Animation Blueprint loads")
 require(unreal.BlueprintEditorLibrary.compile_blueprint(animation_blueprint), "prototype Animation Blueprint compiles")
+require(animation_blueprint.generated_class() is not None, "prototype Animation Blueprint generated class exists")
 anim_default = unreal.get_default_object(animation_blueprint.generated_class())
 for property_name, animation_name in {
     "idle_animation": "A_Mixamo_Idle",
@@ -61,6 +64,7 @@ character_default = unreal.get_default_object(character_blueprint.generated_clas
 mesh_component = character_default.get_editor_property("mesh")
 placeholder = character_default.get_editor_property("placeholder_visual")
 require(mesh_component.get_editor_property("skeletal_mesh_asset") == mesh, "prototype Character uses Y Bot visual mesh")
+require(mesh_component.get_editor_property("animation_mode") == unreal.AnimationMode.ANIMATION_BLUEPRINT, "prototype Character mesh uses Animation Blueprint mode")
 require(mesh_component.get_editor_property("anim_class") == animation_blueprint.generated_class(), "prototype Character uses prototype AnimBP")
 require(placeholder.get_editor_property("hidden_in_game"), "placeholder sphere is hidden")
 

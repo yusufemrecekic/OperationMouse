@@ -84,4 +84,5 @@ private:
 
 	bool bWasFalling = false;
 	float LandingTimeRemaining = 0.0f;
+	FName LastDiagnosticState = NAME_None;
 };

@@ -57,6 +57,8 @@ Next: Manual Host/Client prototype character and animation verification; Phase 5
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; uncooked Editor game startup loaded `L_PrototypeCharacterTest`, selected `BP_OMGameMode_Prototype`, and spawned/possessed `BP_OMMouseCharacter_Prototype` successfully.
 - Clean no-AnimBP Y Bot reference-pose inspection confirmed a structurally normal upright humanoid; the apparent deformation came from applying `-90` degrees to Pitch through a positional `Rotator` constructor instead of explicitly applying it to Yaw.
 - The prototype mesh now uses an explicit `Yaw = -90` visual rotation with the existing `Z = -96` capsule alignment. All eight animation sequences were previewed individually without skeletal collapse, and a runtime AnimBP smoke test showed the character upright, intact, forward-facing, and grounded.
+- A manual T-Pose retest was traced to a stale local `main` Editor DLL after switching back to `feature/prototype-character`: `/Script/OperationMouse.OMAnimInstance` was absent, so the AnimBP generated class and runtime AnimInstance could not load. Rebuilding the current branch restored runtime Idle evaluation without changing movement or reimporting animations.
+- Prototype validation now fails explicitly when the native animation class, AnimBP generated class, Animation Blueprint mode, or mesh Anim Class is unavailable. `LaunchPrototypeCharacterTest.ps1` builds the current Editor module before opening the test map to prevent recurrence after branch switches.
 
 ## Repository
 
@@ -71,6 +73,7 @@ Repository setup: Complete
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
 - No blocking Phase 4 gameplay issue remains after final Host/Client verification.
 - Mixamo import still reports recoverable source warnings for missing smoothing-group metadata and bind poses, but clean Reference Pose, all eight individual animation previews, automated asset validation, and the runtime AnimBP smoke test are visually structurally correct.
+- Developers must rebuild `OperationMouseEditor` after switching between `main` and `feature/prototype-character`; ignored local DLLs are branch-specific and Git cannot switch them.
 - Prototype locomotion and mesh/capsule alignment require final two-player PIE visual verification before a Pull Request.
 
 ## Technical Decisions
