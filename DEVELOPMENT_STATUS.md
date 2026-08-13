@@ -6,11 +6,11 @@ Modular Prototype Character / Animation Layer
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED)
 
-Current: Mixamo Y Bot prototype character implementation corrected and locally verified; manual Host/Client gameplay verification pending
+Current: Pull Request Review - Modular Prototype Character / Animation Layer PASSED
 
-Next: Manual Host/Client prototype character and animation verification; Phase 5 gameplay remains paused while the Production GDD is revised
+Next: Await manual Prototype Character Pull Request merge; Phase 5 remains paused/not merged while the Production GDD revision is pending
 
 ## Completed
 
@@ -59,6 +59,8 @@ Next: Manual Host/Client prototype character and animation verification; Phase 5
 - The prototype mesh now uses an explicit `Yaw = -90` visual rotation with the existing `Z = -96` capsule alignment. All eight animation sequences were previewed individually without skeletal collapse, and a runtime AnimBP smoke test showed the character upright, intact, forward-facing, and grounded.
 - A manual T-Pose retest was traced to a stale local `main` Editor DLL after switching back to `feature/prototype-character`: `/Script/OperationMouse.OMAnimInstance` was absent, so the AnimBP generated class and runtime AnimInstance could not load. Rebuilding the current branch restored runtime Idle evaluation without changing movement or reimporting animations.
 - Prototype validation now fails explicitly when the native animation class, AnimBP generated class, Animation Blueprint mode, or mesh Anim Class is unavailable. `LaunchPrototypeCharacterTest.ps1` builds the current Editor module before opening the test map to prevent recurrence after branch switches.
+- Final two-player Listen Server PIE visual verification PASSED on Host and Client: upright Y Bot presentation, Idle, Walk, Run, Jump/Fall/Land, Crouch Idle, Crouch Walk, existing movement/air control/mantle, ownership isolation, capsule/mesh alignment, and bidirectional multiplayer animation visibility were verified with no blocking deformation or separation issue.
+- The modular Y Bot visual/animation layer is verified independently from gameplay movement and remains replaceable/retargetable for the future biped mouse.
 
 ## Repository
 
@@ -74,7 +76,8 @@ Repository setup: Complete
 - No blocking Phase 4 gameplay issue remains after final Host/Client verification.
 - Mixamo import still reports recoverable source warnings for missing smoothing-group metadata and bind poses, but clean Reference Pose, all eight individual animation previews, automated asset validation, and the runtime AnimBP smoke test are visually structurally correct.
 - Developers must rebuild `OperationMouseEditor` after switching between `main` and `feature/prototype-character`; ignored local DLLs are branch-specific and Git cannot switch them.
-- Prototype locomotion and mesh/capsule alignment require final two-player PIE visual verification before a Pull Request.
+- Accepted non-blocking future animation polish: crouch transitions currently snap too abruptly.
+- Accepted non-blocking future animation polish: Fall/Landing animation choice, timing, and transition feel require tuning.
 
 ## Technical Decisions
 
@@ -102,7 +105,7 @@ Branch: feature/prototype-character
 
 Main files/assets: `UOMAnimInstance`, `ABP_OMPrototypeLocomotion`, `BP_OMMouseCharacter_Prototype`, `BP_OMGameMode_Prototype`, Mixamo prototype assets, and `L_PrototypeCharacterTest`
 
-Status: IMPLEMENTATION COMPLETE - MANUAL HOST/CLIENT VISUAL VERIFICATION PENDING - PHASE 5 PAUSED
+Status: PULL REQUEST REVIEW - PROTOTYPE CHARACTER PASSED - MANUAL HOST/CLIENT VISUAL VERIFICATION PASSED - PHASE 5 PAUSED/NOT MERGED - GDD REVISION PENDING
 
 ## Deferred / Not V1
 
