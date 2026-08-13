@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Basic Mantle
+Modular Prototype Character / Animation Layer
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED)
 
-Current: Pull Request Review - Phase 4 Basic Mantle PASSED
+Current: Pull Request Review - Modular Prototype Character / Animation Layer PASSED
 
-Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
+Next: Await manual Prototype Character Pull Request merge; Phase 5 remains paused/not merged while the Production GDD revision is pending
 
 ## Completed
 
@@ -48,6 +48,19 @@ Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
 - Focused Phase 4 fixes use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures.
 - The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering, so editable built-in AirControl was set to 1.0 for the final retest.
 - Final Phase 4 two-player Listen Server PIE verification PASSED on Host and Client: Basic Mantle, Low/High mantle, Too High rejection, Blocked Clearance rejection, controlled Character-forward detection, airborne reverse/strafe/camera-relative steering, ownership isolation, and bidirectional mantle/movement visibility were verified with no blocking gameplay issue.
+- Modular prototype visual layer implemented on top of the unchanged `AOMMouseCharacter` gameplay core using `BP_OMMouseCharacter_Prototype` and `BP_OMGameMode_Prototype`.
+- Mixamo Y Bot Skeletal Mesh and eight in-place/root-motion-disabled prototype locomotion sequences imported under a prototype-only content tree and verified to share one Skeleton.
+- `UOMAnimInstance` exposes generic Ground Speed, Movement Direction, Falling, Grounded, Ascending, Crouched, Sprinting, and Mantling state derived from Character/CharacterMovement data.
+- `ABP_OMPrototypeLocomotion` maps visual-only Idle, Walk/Run blend, Jump, Fall, Land, Crouch Idle, and Crouch Walk assets without changing gameplay speeds or movement authority.
+- Dedicated `L_PrototypeCharacterTest` map created from the approved Phase 4 mantle test layout with two PlayerStarts and a prototype-only GameMode override.
+- Automated prototype asset validation passed: all assets load, all animations use the single Y Bot Skeleton, root motion is disabled, all Blueprints compile, and the test map retains multiplayer and mantle fixtures.
+- `OperationMouseEditor` and `OperationMouse` Win64 Development builds passed; uncooked Editor game startup loaded `L_PrototypeCharacterTest`, selected `BP_OMGameMode_Prototype`, and spawned/possessed `BP_OMMouseCharacter_Prototype` successfully.
+- Clean no-AnimBP Y Bot reference-pose inspection confirmed a structurally normal upright humanoid; the apparent deformation came from applying `-90` degrees to Pitch through a positional `Rotator` constructor instead of explicitly applying it to Yaw.
+- The prototype mesh now uses an explicit `Yaw = -90` visual rotation with the existing `Z = -96` capsule alignment. All eight animation sequences were previewed individually without skeletal collapse, and a runtime AnimBP smoke test showed the character upright, intact, forward-facing, and grounded.
+- A manual T-Pose retest was traced to a stale local `main` Editor DLL after switching back to `feature/prototype-character`: `/Script/OperationMouse.OMAnimInstance` was absent, so the AnimBP generated class and runtime AnimInstance could not load. Rebuilding the current branch restored runtime Idle evaluation without changing movement or reimporting animations.
+- Prototype validation now fails explicitly when the native animation class, AnimBP generated class, Animation Blueprint mode, or mesh Anim Class is unavailable. `LaunchPrototypeCharacterTest.ps1` builds the current Editor module before opening the test map to prevent recurrence after branch switches.
+- Final two-player Listen Server PIE visual verification PASSED on Host and Client: upright Y Bot presentation, Idle, Walk, Run, Jump/Fall/Land, Crouch Idle, Crouch Walk, existing movement/air control/mantle, ownership isolation, capsule/mesh alignment, and bidirectional multiplayer animation visibility were verified with no blocking deformation or separation issue.
+- The modular Y Bot visual/animation layer is verified independently from gameplay movement and remains replaceable/retargetable for the future biped mouse.
 
 ## Repository
 
@@ -61,6 +74,10 @@ Repository setup: Complete
 - The first build briefly retried compile actions because of low available memory; Unreal Build Accelerator recovered and the build succeeded.
 - The headless Editor smoke test initialized successfully, but its scripted quit did not close the process; the test process was stopped after verification.
 - No blocking Phase 4 gameplay issue remains after final Host/Client verification.
+- Mixamo import still reports recoverable source warnings for missing smoothing-group metadata and bind poses, but clean Reference Pose, all eight individual animation previews, automated asset validation, and the runtime AnimBP smoke test are visually structurally correct.
+- Developers must rebuild `OperationMouseEditor` after switching between `main` and `feature/prototype-character`; ignored local DLLs are branch-specific and Git cannot switch them.
+- Accepted non-blocking future animation polish: crouch transitions currently snap too abruptly.
+- Accepted non-blocking future animation polish: Fall/Landing animation choice, timing, and transition feel require tuning.
 
 ## Technical Decisions
 
@@ -74,18 +91,21 @@ Repository setup: Complete
 - Authoritative mission logic will be separated from replicated public mission state.
 - Gameplay classes will be created only when the active milestone requires them.
 - Phase 4 prototype mantle intentionally uses Character physical forward direction; mantle while the camera alone looks backward is accepted for now and may receive movement-intent refinement only in a later reviewed scope.
+- Mixamo is a temporary visual layer only. CharacterMovement, traversal, replication, and gameplay components remain independent of Mixamo bones and asset names.
+- Normal locomotion remains in-place and driven by built-in `CharacterMovementComponent`; the animation layer derives poses from replicated Character state without transform RPCs or animation authority.
+- A future bipedal mouse will replace the prototype Skeletal Mesh/AnimBP through a visual Blueprint and IK Retargeter workflow; future tail/ear bones remain secondary visual concerns.
 
 ## Active Work
 
 Developer: Unassigned
 
-System: Basic Mantle
+System: Modular Prototype Character / Animation Layer
 
-Branch: feature/basic-mantle
+Branch: feature/prototype-character
 
-Main files/assets: `UOMTraversalComponent`, `AOMMouseCharacter`, and `L_Phase4_MantleTest`
+Main files/assets: `UOMAnimInstance`, `ABP_OMPrototypeLocomotion`, `BP_OMMouseCharacter_Prototype`, `BP_OMGameMode_Prototype`, Mixamo prototype assets, and `L_PrototypeCharacterTest`
 
-Status: PULL REQUEST REVIEW - PHASE 4 PASSED - PHASE 5 NOT STARTED
+Status: PULL REQUEST REVIEW - PROTOTYPE CHARACTER PASSED - MANUAL HOST/CLIENT VISUAL VERIFICATION PASSED - PHASE 5 PAUSED/NOT MERGED - GDD REVISION PENDING
 
 ## Deferred / Not V1
 
