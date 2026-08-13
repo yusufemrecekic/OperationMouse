@@ -14,6 +14,7 @@
 - Reference images guide art direction, silhouette, proportion, and readability. They are not gameplay specifications.
 - Debug the first meaningful error and its root cause. Do not apply random fixes.
 - Update `DEVELOPMENT_STATUS.md` after meaningful milestones.
+- Run `Scripts/ValidateProject.ps1 -Mode Full` before creating a Pull Request when the validator is available on the branch.
 
 ## Team Safety
 

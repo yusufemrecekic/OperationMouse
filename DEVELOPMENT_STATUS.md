@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Basic Mantle
+GDD-Independent Project Validation Tooling
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, and Phase 4 Basic Mantle (PASSED)
 
-Current: Pull Request Review - Phase 4 Basic Mantle PASSED
+Current: Automated project health and regression tooling implementation
 
-Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
+Next: Validate and review the tooling branch; GDD-dependent Phase 5 gameplay remains NOT STARTED
 
 ## Completed
 
@@ -48,6 +48,8 @@ Next: Await manual Phase 4 Pull Request merge; Phase 5 NOT STARTED
 - Focused Phase 4 fixes use a Character-facing 30-degree detection half-cone, validate the final destination with the real Character capsule, preserve horizontal exit velocity, minimize floor-settling offset, and provide enclosed blocked-clearance plus isolated normal-jump fixtures.
 - The focused mantle retest confirmed low/high mantle, too-high and blocked-clearance rejection, Host/Client mantle, and hitch removal. A locomotion follow-up found UE's default 0.05 falling AirControl too weak for arcade steering, so editable built-in AirControl was set to 1.0 for the final retest.
 - Final Phase 4 two-player Listen Server PIE verification PASSED on Host and Client: Basic Mantle, Low/High mantle, Too High rejection, Blocked Clearance rejection, controlled Character-forward detection, airborne reverse/strafe/camera-relative steering, ownership isolation, and bidirectional mantle/movement visibility were verified with no blocking gameplay issue.
+- GDD-independent QUICK/FULL project validation tooling added for repository/LFS hygiene, approved core classes, Enhanced Input, project content, maps, headless startup, and Win64 Development builds.
+- Beginner-facing validation and temporary Host/Client network-emulation instructions added; automated validation remains explicitly separate from manual multiplayer testing.
 
 ## Repository
 
@@ -79,13 +81,13 @@ Repository setup: Complete
 
 Developer: Unassigned
 
-System: Basic Mantle
+System: Project Validation Tooling
 
-Branch: feature/basic-mantle
+Branch: feature/project-validation
 
-Main files/assets: `UOMTraversalComponent`, `AOMMouseCharacter`, and `L_Phase4_MantleTest`
+Main files/assets: `Scripts/ValidateProject.ps1`, `Scripts/Editor/validate_project_content.py`, and developer validation documentation
 
-Status: PULL REQUEST REVIEW - PHASE 4 PASSED - PHASE 5 NOT STARTED
+Status: IMPLEMENTATION IN PROGRESS - PHASE 5 NOT STARTED
 
 ## Deferred / Not V1
 
