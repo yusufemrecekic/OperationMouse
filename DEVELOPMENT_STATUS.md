@@ -72,6 +72,7 @@ Next: Obtain physical gamepad evidence and Hilmi's interaction contract/network 
 - Sprint 1 Pull Request #6 was merged into `main` at `db4f56b`; `main` contains all three Sprint 1 commits (`80f300d`, `72ac72b`, `020b26b`).
 - Sprint 1 closeout evidence now maps Production Control v5.1 onboarding/Sprint items without claiming physical gamepad, Hilmi network acceptance, Kitchen route, or session flow.
 - ONB-018 DONE / PASSED: `codex/onb018-revert-exercise` added one temporary Markdown file (`b515864`), merged it through PR #8, removed it with real `git revert` commit `6107caa`, and merged the revert through PR #9; final tree equality and clean status were verified with no gameplay/content/stash impact.
+- Sprint 2 donor audit compared `main` with `feature/interaction-foundation` and inspected the preserved stash through Git metadata only. Current `main` supersedes all old interaction source; the stash contains only a distinct obsolete test-map binary and is not a Sprint 2 code donor.
 - Sixteen repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, evidence status, and a searchable debug/log reproduction standard were documented.
 
 ## Repository
@@ -118,11 +119,11 @@ Repository setup: Complete
 
 Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
 
-System: ONB-018 Evidence / Sprint 2 Read-only Pre-flight
+System: Sprint 2 Phase 5 Donor Mapping (Read-only)
 
-Branch: codex/onb018-evidence
+Branch: codex/sprint2-donor-map
 
-Main files/assets: `SPRINT1_CLOSEOUT.md`, `SPRINT2_PREFLIGHT.md`, and `DEVELOPMENT_STATUS.md`
+Main files/assets: `SPRINT2_PHASE5_DONOR_MAP.md` and `DEVELOPMENT_STATUS.md`
 
 Status: SPRINT 1 PC VS-Y01 + ONB-018 PASSED - GAMEPAD MANUAL TEST PENDING - HILMI NETWORK REVIEW PENDING - SPRINT 2 NOT STARTED - OLD PHASE 5 STASH PRESERVED
 
