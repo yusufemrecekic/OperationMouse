@@ -8,6 +8,7 @@ class UStaticMeshComponent;
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
+class UOMInteractionComponent;
 class UOMTraversalComponent;
 class USpringArmComponent;
 struct FInputActionValue;
@@ -44,6 +45,8 @@ private:
 	void StopSprint();
 	void StartCrouch();
 	void StopCrouch();
+	void StartInteraction();
+	void StopInteraction();
 	void SetSprinting(bool bNewSprinting);
 	void TryConsumeBufferedJump();
 
@@ -65,6 +68,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Traversal", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UOMTraversalComponent> TraversalComponent;
 
+	/** Owns local focus/prompt handling and server-authoritative interaction requests. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Interaction", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOMInteractionComponent> InteractionComponent;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> GameplayMappingContext;
 
@@ -82,6 +89,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> CrouchAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> InteractAction;
 
 	/** Normal movement speed in Unreal units per second. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
