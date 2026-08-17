@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Modular Prototype Character / Animation Layer
+Sprint 1 Gameplay Foundation / VS-Y01
 
 ## Milestone Progress
 
-Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED)
+Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Pull Request Review - Modular Prototype Character / Animation Layer PASSED
+Current: Sprint 1 local movement + interaction foundation implemented; automated validation passed; manual keyboard/mouse and gamepad VS-Y01 verification pending
 
-Next: Await manual Prototype Character Pull Request merge; Phase 5 remains paused/not merged while the Production GDD revision is pending
+Next: Run the two-minute local loop on both input devices, then submit the provisional interaction RPC/replication layer to Hilmi for network ownership review
 
 ## Completed
 
@@ -61,6 +61,13 @@ Next: Await manual Prototype Character Pull Request merge; Phase 5 remains pause
 - Prototype validation now fails explicitly when the native animation class, AnimBP generated class, Animation Blueprint mode, or mesh Anim Class is unavailable. `LaunchPrototypeCharacterTest.ps1` builds the current Editor module before opening the test map to prevent recurrence after branch switches.
 - Final two-player Listen Server PIE visual verification PASSED on Host and Client: upright Y Bot presentation, Idle, Walk, Run, Jump/Fall/Land, Crouch Idle, Crouch Walk, existing movement/air control/mantle, ownership isolation, capsule/mesh alignment, and bidirectional multiplayer animation visibility were verified with no blocking deformation or separation issue.
 - The modular Y Bot visual/animation layer is verified independently from gameplay movement and remains replaceable/retargetable for the future biped mouse.
+- Prototype Character Pull Request #5 was merged into `main` at `c04aeeb`.
+- Sprint 1 gameplay/network hand-off contract documented with input, authoritative states, validation, replication boundaries, contention, disconnect, and edge-case rules.
+- Gamepad defaults added to `IMC_Gameplay`: Left Stick movement, Right Stick look with radial dead zone and conventional vertical direction, Face Button Bottom jump, Left Thumbstick sprint, Face Button Right crouch, and Face Button Left interact.
+- The reusable Interaction Interface/ActorComponent foundation was carried forward without Level Blueprint gameplay logic; its existing RPC/replication implementation remains provisional until Hilmi's review.
+- `L_Phase5_InteractionTest` now contains the official Sprint 1 Button, Pickup, Door, Expected Fail, and Reset proxy set plus two PlayerStarts and existing locomotion fixtures.
+- Sprint 1 automated validation passed for all keyboard/mouse and gamepad mappings, gamepad look modifiers, five interaction proxy roles, two PlayerStarts, Character InteractionComponent, map load, and Map Check with 0 errors / 0 warnings.
+- Ten repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, and a searchable debug/log reproduction standard were documented.
 
 ## Repository
 
@@ -78,6 +85,10 @@ Repository setup: Complete
 - Developers must rebuild `OperationMouseEditor` after switching between `main` and `feature/prototype-character`; ignored local DLLs are branch-specific and Git cannot switch them.
 - Accepted non-blocking future animation polish: crouch transitions currently snap too abruptly.
 - Accepted non-blocking future animation polish: Fall/Landing animation choice, timing, and transition feel require tuning.
+- Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
+- Sprint 1 Button/Pickup/Door/Fail/Reset proxies require the final manual two-minute local gameplay pass before VS-Y01 can be marked PASSED.
+- Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
+- The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
 
@@ -94,18 +105,21 @@ Repository setup: Complete
 - Mixamo is a temporary visual layer only. CharacterMovement, traversal, replication, and gameplay components remain independent of Mixamo bones and asset names.
 - Normal locomotion remains in-place and driven by built-in `CharacterMovementComponent`; the animation layer derives poses from replicated Character state without transform RPCs or animation authority.
 - A future bipedal mouse will replace the prototype Skeletal Mesh/AnimBP through a visual Blueprint and IK Retargeter workflow; future tail/ear bones remain secondary visual concerns.
+- Sprint 1 scale decision: preserve the working Character/capsule scale and create the giant-house feeling by scaling the Kitchen environment relative to the Character.
+- Gameplay behavior and interactable outcomes belong to Yusuf; interaction RPC/authority/replication approval belongs to Hilmi; scale, graybox, prompt, and visual acceptance belong to Ali.
+- Sprint 1 interaction proxies validate interaction flow only. Real Grab/Carry begins in Sprint 2 and is not implemented by the Pickup proxy.
 
 ## Active Work
 
-Developer: Unassigned
+Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
 
-System: Modular Prototype Character / Animation Layer
+System: Sprint 1 Character Input + Interaction Foundation
 
-Branch: feature/prototype-character
+Branch: codex/sprint1-gameplay-foundation
 
-Main files/assets: `UOMAnimInstance`, `ABP_OMPrototypeLocomotion`, `BP_OMMouseCharacter_Prototype`, `BP_OMGameMode_Prototype`, Mixamo prototype assets, and `L_PrototypeCharacterTest`
+Main files/assets: `UOMInteractionComponent`, `UOMInteractableInterface`, `AOMTestInteractableActor`, `IA_Interact`, `IMC_Gameplay`, `L_Phase5_InteractionTest`, and Sprint 1 contract/regression/validation documents
 
-Status: PULL REQUEST REVIEW - PROTOTYPE CHARACTER PASSED - MANUAL HOST/CLIENT VISUAL VERIFICATION PASSED - PHASE 5 PAUSED/NOT MERGED - GDD REVISION PENDING
+Status: IMPLEMENTATION + AUTOMATED VALIDATION PASSED - MANUAL KEYBOARD/GAMEPAD VS-Y01 PENDING - HILMI NETWORK REVIEW PENDING - OLD PHASE 5 BRANCH/STASH PRESERVED
 
 ## Deferred / Not V1
 
