@@ -70,7 +70,8 @@ Next: Obtain physical gamepad evidence and Hilmi's interaction contract/network 
 - Sprint 1 integration retest fix reoriented all test-map TextRender labels without mirrored scale, separated Button/Pickup/Door/Fail/Reset into a clear 600-UU-spaced route, removed obsolete generic Phase 5 labels, and restored the map override to `BP_OMGameMode_Prototype` so normal Play spawns `BP_OMMouseCharacter_Prototype` while retaining the unchanged `AOMMouseCharacter` gameplay base.
 - Final Sprint 1 manual PC verification PASSED for readable labels, separated fixtures, prototype Character spawn, WASD, mouse camera, jump, crouch, Interact, Button, Pickup proxy, Door, Expected Fail, and Reset.
 - Sprint 1 Pull Request #6 was merged into `main` at `db4f56b`; `main` contains all three Sprint 1 commits (`80f300d`, `72ac72b`, `020b26b`).
-- Sprint 1 closeout evidence now maps Production Control v5.1 onboarding/Sprint items without claiming physical gamepad, Hilmi network acceptance, ONB-018 revert evidence, Kitchen route, or session flow.
+- Sprint 1 closeout evidence now maps Production Control v5.1 onboarding/Sprint items without claiming physical gamepad, Hilmi network acceptance, Kitchen route, or session flow.
+- ONB-018 DONE / PASSED: `codex/onb018-revert-exercise` added one temporary Markdown file (`b515864`), merged it through PR #8, removed it with real `git revert` commit `6107caa`, and merged the revert through PR #9; final tree equality and clean status were verified with no gameplay/content/stash impact.
 - Sixteen repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, evidence status, and a searchable debug/log reproduction standard were documented.
 
 ## Repository
@@ -92,7 +93,6 @@ Repository setup: Complete
 - Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
-- ONB-018 remains partial: normal feature-branch/PR merges are evidenced, but repository history has no completed revert exercise.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -118,13 +118,13 @@ Repository setup: Complete
 
 Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
 
-System: Sprint 1 Closeout / Sprint 2 Readiness Documentation
+System: ONB-018 Evidence / Sprint 2 Read-only Pre-flight
 
-Branch: codex/sprint1-closeout
+Branch: codex/onb018-evidence
 
-Main files/assets: `SPRINT1_CLOSEOUT.md`, `SPRINT1_REGRESSION_TESTS.md`, `SPRINT2_GRAB_CARRY_READINESS.md`, and `DEVELOPMENT_STATUS.md`
+Main files/assets: `SPRINT1_CLOSEOUT.md`, `SPRINT2_PREFLIGHT.md`, and `DEVELOPMENT_STATUS.md`
 
-Status: SPRINT 1 PC VS-Y01 PASSED + MERGED - GAMEPAD MANUAL TEST PENDING - HILMI NETWORK REVIEW PENDING - SPRINT 2 NOT STARTED - OLD PHASE 5 STASH PRESERVED
+Status: SPRINT 1 PC VS-Y01 + ONB-018 PASSED - GAMEPAD MANUAL TEST PENDING - HILMI NETWORK REVIEW PENDING - SPRINT 2 NOT STARTED - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
