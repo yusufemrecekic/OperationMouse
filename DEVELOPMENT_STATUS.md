@@ -8,9 +8,9 @@ Sprint 1 Gameplay Foundation / VS-Y01
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 1 local movement + interaction foundation implemented; automated validation passed; manual keyboard/mouse and gamepad VS-Y01 verification pending
+Current: Sprint 1 PC movement + interaction foundation PASSED and merged through PR #6; closeout audit complete; physical gamepad and Hilmi network evidence remain pending
 
-Next: Run the two-minute local loop on both input devices, then submit the provisional interaction RPC/replication layer to Hilmi for network ownership review
+Next: Obtain physical gamepad evidence and Hilmi's interaction contract/network review; Sprint 2 Grab/Carry/Drop remains NOT STARTED
 
 ## Completed
 
@@ -68,7 +68,10 @@ Next: Run the two-minute local loop on both input devices, then submit the provi
 - `L_Phase5_InteractionTest` now contains the official Sprint 1 Button, Pickup, Door, Expected Fail, and Reset proxy set plus two PlayerStarts and existing locomotion fixtures.
 - Sprint 1 automated validation passed for all keyboard/mouse and gamepad mappings, gamepad look modifiers, five interaction proxy roles, two PlayerStarts, Character InteractionComponent, map load, and Map Check with 0 errors / 0 warnings.
 - Sprint 1 integration retest fix reoriented all test-map TextRender labels without mirrored scale, separated Button/Pickup/Door/Fail/Reset into a clear 600-UU-spaced route, removed obsolete generic Phase 5 labels, and restored the map override to `BP_OMGameMode_Prototype` so normal Play spawns `BP_OMMouseCharacter_Prototype` while retaining the unchanged `AOMMouseCharacter` gameplay base.
-- Ten repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, and a searchable debug/log reproduction standard were documented.
+- Final Sprint 1 manual PC verification PASSED for readable labels, separated fixtures, prototype Character spawn, WASD, mouse camera, jump, crouch, Interact, Button, Pickup proxy, Door, Expected Fail, and Reset.
+- Sprint 1 Pull Request #6 was merged into `main` at `db4f56b`; `main` contains all three Sprint 1 commits (`80f300d`, `72ac72b`, `020b26b`).
+- Sprint 1 closeout evidence now maps Production Control v5.1 onboarding/Sprint items without claiming physical gamepad, Hilmi network acceptance, ONB-018 revert evidence, Kitchen route, or session flow.
+- Sixteen repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, evidence status, and a searchable debug/log reproduction standard were documented.
 
 ## Repository
 
@@ -87,8 +90,9 @@ Repository setup: Complete
 - Accepted non-blocking future animation polish: crouch transitions currently snap too abruptly.
 - Accepted non-blocking future animation polish: Fall/Landing animation choice, timing, and transition feel require tuning.
 - Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
-- Sprint 1 Button/Pickup/Door/Fail/Reset proxies require the final manual two-minute local gameplay pass before VS-Y01 can be marked PASSED.
+- Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
+- ONB-018 remains partial: normal feature-branch/PR merges are evidenced, but repository history has no completed revert exercise.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -114,13 +118,13 @@ Repository setup: Complete
 
 Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
 
-System: Sprint 1 Character Input + Interaction Foundation
+System: Sprint 1 Closeout / Sprint 2 Readiness Documentation
 
-Branch: codex/sprint1-gameplay-foundation
+Branch: codex/sprint1-closeout
 
-Main files/assets: `UOMInteractionComponent`, `UOMInteractableInterface`, `AOMTestInteractableActor`, `IA_Interact`, `IMC_Gameplay`, `L_Phase5_InteractionTest`, and Sprint 1 contract/regression/validation documents
+Main files/assets: `SPRINT1_CLOSEOUT.md`, `SPRINT1_REGRESSION_TESTS.md`, `SPRINT2_GRAB_CARRY_READINESS.md`, and `DEVELOPMENT_STATUS.md`
 
-Status: IMPLEMENTATION + AUTOMATED VALIDATION PASSED - MANUAL KEYBOARD/GAMEPAD VS-Y01 PENDING - HILMI NETWORK REVIEW PENDING - OLD PHASE 5 BRANCH/STASH PRESERVED
+Status: SPRINT 1 PC VS-Y01 PASSED + MERGED - GAMEPAD MANUAL TEST PENDING - HILMI NETWORK REVIEW PENDING - SPRINT 2 NOT STARTED - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
