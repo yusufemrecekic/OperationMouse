@@ -35,7 +35,7 @@ No screenshot or video evidence is claimed by this closeout.
 | ONB-009 — Gameplay contract example | **PENDING EVIDENCE** | Deliver Interact input/state/event/edge-case contract; Hilmi can implement replication from it without verbal explanation. | `INTERACTION_GAMEPLAY_NETWORK_CONTRACT.md` contains ownership, input, local/authoritative state, event flow, validation, cancellation, replication, contention, disconnect and edge cases. The artifact is content-complete; Hilmi's explicit hand-off acceptance is not recorded. |
 | ONB-012 — Debug and logging standard | **DONE / PASSED** | Deliver log categories, on-screen state and reproduction-step standard; a bug can be reproduced from its log/evidence. | `DEBUG_LOGGING_STANDARD.md`, stable interaction rejection reasons, visible proxy states and a complete reproduction template exist. The Expected Fail path emits a searchable reason. |
 | ONB-015 — Interaction test harness | **DONE / PASSED** | Deliver Button, Pickup, Door and Fail/Reset proxies; the map exercises the basic flow in about five minutes. | All five separated proxies exist in `L_Phase5_InteractionTest`; Button, Pickup, Door, expected Fail and Reset passed the manual PC test in the two-minute loop. |
-| ONB-018 — Git/branch conflict exercise | **PARTIAL** | Deliver a small feature branch, merge and revert; change integrates without damaging main. | Multiple focused branches and PR merge commits prove branch/merge integration. Repository history contains no actual revert commit/evidence, so the full exercise is not complete. |
+| ONB-018 — Git/branch conflict exercise | **DONE / PASSED** | Deliver a small feature branch, merge and revert; change integrates without damaging main. | A harmless documentation file was committed on `codex/onb018-revert-exercise`, merged through PR #8, reverted with an actual `git revert`, and the revert was merged through PR #9. Final tree equality and clean status were verified. |
 | ONB-021 — Regression template | **DONE / PASSED** | Deliver Given/When/Then or step/expected-result tests; 10 basic tests are repeatable. | `SPRINT1_REGRESSION_TESTS.md` contains more than 10 concrete, repeatable tests with device-specific evidence status. |
 
 ## Yusuf Sprint 1 audit
@@ -84,7 +84,6 @@ A runtime smoke test selected `BP_OMGameMode_Prototype`, spawned and possessed
 - **GAMEPAD MANUAL TEST: PENDING EVIDENCE** — no physical device is available.
 - Hilmi network contract review and approval: pending.
 - Host/Client interaction, contention, disconnect and latency evidence: pending.
-- ONB-018 real revert exercise: missing.
 - Kitchen route and product-facing session/lobby host/join evidence: not started.
 - Controlled GDD v3.3 / Production Control v5.1 files: not tracked in the repo.
 - Tracker dependency text `ONB-Y01..Y10`: unresolved; do not infer mappings.
@@ -93,6 +92,21 @@ A runtime smoke test selected `BP_OMGameMode_Prototype`, spawned and possessed
 
 The local PC VS-Y01 gameplay loop is closed as **DONE / PASSED**. Sprint 1 is
 not evidence-complete across every onboarding and network dimension: gamepad,
-Hilmi network acceptance, ONB-018 revert evidence, Kitchen route and session
-flow remain explicitly open. Sprint 2 implementation must not use this closeout
-to claim those items passed.
+Hilmi network acceptance, Kitchen route and session flow remain explicitly open.
+Sprint 2 implementation must not use this closeout to claim those items passed.
+
+## ONB-018 revert exercise evidence
+
+- Branch: `codex/onb018-revert-exercise`
+- Temporary documentation commit: `b5158644e7f179737d5e15a04e70f649b37066d8`
+- Temporary commit merge: PR #8 / `a9b1951ac3e11883f1ba4938a6ca84d6d0701947`
+- Actual revert command: `git revert --no-edit b5158644e7f179737d5e15a04e70f649b37066d8`
+- Revert commit: `6107caaada03ddebdea2fd29687feb3ddfaccb12`
+- Revert merge: PR #9 / `0af93f3536511af10af741dd89783eaa2de26c0f`
+- Verification: the temporary file no longer exists; `git diff 44c5b22 0af93f3`
+  is empty; the working tree is clean.
+- Scope: one temporary Markdown file only. No gameplay, Config, Content, Unreal
+  binary or stash data was affected.
+
+This satisfies the exact branch + merge + revert + undamaged-main acceptance
+wording, so ONB-018 is now **DONE / PASSED**.
