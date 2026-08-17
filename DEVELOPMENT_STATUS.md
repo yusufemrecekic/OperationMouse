@@ -67,6 +67,7 @@ Next: Run the two-minute local loop on both input devices, then submit the provi
 - The reusable Interaction Interface/ActorComponent foundation was carried forward without Level Blueprint gameplay logic; its existing RPC/replication implementation remains provisional until Hilmi's review.
 - `L_Phase5_InteractionTest` now contains the official Sprint 1 Button, Pickup, Door, Expected Fail, and Reset proxy set plus two PlayerStarts and existing locomotion fixtures.
 - Sprint 1 automated validation passed for all keyboard/mouse and gamepad mappings, gamepad look modifiers, five interaction proxy roles, two PlayerStarts, Character InteractionComponent, map load, and Map Check with 0 errors / 0 warnings.
+- Sprint 1 integration retest fix reoriented all test-map TextRender labels without mirrored scale, separated Button/Pickup/Door/Fail/Reset into a clear 600-UU-spaced route, removed obsolete generic Phase 5 labels, and restored the map override to `BP_OMGameMode_Prototype` so normal Play spawns `BP_OMMouseCharacter_Prototype` while retaining the unchanged `AOMMouseCharacter` gameplay base.
 - Ten repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, and a searchable debug/log reproduction standard were documented.
 
 ## Repository

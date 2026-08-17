@@ -6,6 +6,10 @@ import unreal
 MAPPING_CONTEXT_PATH = "/Game/OperationMouse/Input/IMC_Gameplay.IMC_Gameplay"
 MAP_PATH = "/Game/OperationMouse/Tests/Maps/L_Phase5_InteractionTest"
 HARNESS_TAG = "Sprint1InteractionHarness"
+PROTOTYPE_GAME_MODE_PATH = (
+    "/Game/OperationMouse/Characters/Prototype/Blueprints/"
+    "BP_OMGameMode_Prototype.BP_OMGameMode_Prototype_C"
+)
 
 ACTIONS = {
     "Move": "/Game/OperationMouse/Input/IA_Move.IA_Move",
@@ -158,12 +162,36 @@ def rebuild_interaction_harness():
     if old_proxies:
         actor_subsystem.destroy_actors(old_proxies)
 
+    # The carried-forward Phase 5 labels describe the old generic fixtures and
+    # visually collide with the focused Sprint 1 route. They are not gameplay.
+    obsolete_labels = [
+        actor
+        for actor in all_actors
+        if actor.get_actor_label().startswith("Phase5_Label_")
+    ]
+    if obsolete_labels:
+        actor_subsystem.destroy_actors(obsolete_labels)
+
+    prototype_game_mode = unreal.load_class(None, PROTOTYPE_GAME_MODE_PATH)
+    if prototype_game_mode is None:
+        raise RuntimeError(f"Could not load {PROTOTYPE_GAME_MODE_PATH}")
+    world = unreal.get_editor_subsystem(
+        unreal.UnrealEditorSubsystem
+    ).get_editor_world()
+    world.get_world_settings().set_editor_property(
+        "default_game_mode", prototype_game_mode
+    )
+
     start = sorted(player_starts, key=lambda actor: actor.get_actor_label())[0]
     origin = start.get_actor_location()
     forward = start.get_actor_forward_vector()
     right = start.get_actor_right_vector()
-    center = origin + forward * 650.0
-    offsets = (-600.0, -300.0, 0.0, 300.0, 600.0)
+    # Keep the interaction row between the PlayerStarts and the mantle course,
+    # but off the X=0 mantle-fixture line. Six metres between stations leaves a
+    # clear technical-test walking lane with no intersecting cube geometry.
+    center = origin + forward * 250.0 + right * 300.0
+    offsets = (-1200.0, -600.0, 0.0, 600.0, 1200.0)
+    readable_rotation = unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0)
 
     enum_type = unreal.OMTestInteractionRole
     spawned = []
@@ -171,7 +199,7 @@ def rebuild_interaction_harness():
         role = getattr(enum_type, role_name)
         location = center + right * right_offset
         actor = actor_subsystem.spawn_actor_from_class(
-            proxy_class, location, start.get_actor_rotation(), transient=False
+            proxy_class, location, readable_rotation, transient=False
         )
         if actor is None:
             raise RuntimeError(f"Could not spawn {role_name} proxy")
@@ -180,6 +208,13 @@ def rebuild_interaction_harness():
         actor.set_editor_property("tags", [unreal.Name(HARNESS_TAG)])
         spawned.append(actor)
         unreal.log(f"OM_SPRINT1|HARNESS|SPAWNED|{role_name}|{location}")
+
+    # TextRender fronts face local +X. The normal route approaches from -X, so
+    # yaw 180 (without negative scale or roll mirroring) makes every retained
+    # map label readable from the gameplay camera.
+    for actor in actor_subsystem.get_all_level_actors():
+        if actor.get_class().get_name() == "TextRenderActor":
+            actor.set_actor_rotation(readable_rotation, False)
 
     if not level_subsystem.save_current_level():
         raise RuntimeError("Could not save the Sprint 1 interaction test map")
