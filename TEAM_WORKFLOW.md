@@ -19,16 +19,82 @@ Bu belge küçük bir indie ekibinin Git, GitHub, Git LFS, Unreal Engine ve VS C
 
 ## Branch düzeni
 
-`main` her zaman paylaşılabilir ve mümkün olduğunca stabil tutulur. Gameplay geliştirmesi doğrudan `main` üzerinde yapılmaz.
+`main`, ekibin çalışan ortak oyunudur; her zaman paylaşılabilir ve mümkün olduğunca stabil tutulur. Hiçbir geliştirme doğrudan `main` üzerinde yapılmaz.
+
+Her ekip üyesi aynı **OperationMouse GitHub repository'sini** kendi bilgisayarına clone eder. Ayrı Unreal projeleri oluşturulmaz. Yeni bir görev her zaman güncel `main` üzerinden, görev sahibinin branch prefix'i kullanılarak açılır:
+
+- Ali: `feature/ali-*`
+- Yusuf: `feature/yusuf-*`
+- Hilmi: `feature/hilmi-*`
+
+Standart teslim akışı değişmez:
+
+```text
+latest main → branch → test → commit → push → Pull Request → merge
+```
+
+### Kesin rol sahipliği
+
+#### Ali (Patron) — `feature/ali-*`
+
+- Design ve art
+- Kitchen ve level çalışmaları
+- Character visuals
+- Materials ve lighting
+- UI visual
+- Animation ve readability
+- Final visual/design acceptance
+
+#### Yusuf — `feature/yusuf-*`
+
+- Gameplay
+- Character gameplay
+- Interaction
+- Grab / Carry / Throw
+- Heavy Carry gameplay logic
+- Cat / Robot AI
+- Traps
+- Mission gameplay
+- Gameplay regression ve testing
+
+#### Hilmi — `feature/hilmi-*`
+
+- Multiplayer ve network
+- Host / Join / Session / Lobby
+- RPC
+- Replication
+- Server authority
+- Network state synchronization
+- Network physics
+- Gerektiğinde disconnect ve late join davranışı
+- Latency ve packet-loss testleri
+- 2-PC network evidence
+
+### Birden fazla owner'ı ilgilendiren sistemler
+
+Bir sistem birden fazla kişiyi ilgilendiriyorsa sorumluluk sınırları korunur. Örneğin **Heavy Carry** için:
+
+- Yusuf: gameplay davranışı ve kuralları
+- Hilmi: replication, authority ve network davranışı
+- Ali: grip, animation ve readability
+
+Owner olmayan ekip üyesi gerekli bir dosyaya dokunabilir; ancak diğer owner'ın davranışını önceden haber vermeden değiştiremez. Shared C++, Blueprint, Data Asset veya map değişiklikleri ilgili owner'larla koordine edilir.
+
+### Proje ve planlama kaynakları
+
+- **OneDrive:** GDD, tracker ve planning belgeleri
+- **GitHub + Git LFS:** Unreal project, code ve project asset'leri
+
+OneDrive üzerinde ayrı bir Unreal proje kopyısı ekip geliştirme kaynağı olarak kullanılmaz.
 
 Kısa ömürlü branch örnekleri:
 
-- `feature/networked-movement`
-- `feature/interaction-system`
-- `feature/cat-ai`
-- `feature/kitchen-graybox`
-- `feature/ui-main-menu`
-- `fix/client-interaction-replication`
+- `feature/yusuf-interaction-system`
+- `feature/yusuf-cat-ai`
+- `feature/hilmi-networked-movement`
+- `feature/ali-kitchen-graybox`
+- `feature/ali-ui-main-menu`
+- `feature/hilmi-client-interaction-replication`
 - Codex çalışmaları için varsayılan olarak `codex/<task-name>`
 
 Bir branch tek bir sistem veya düzeltmeye odaklanmalı ve iş tamamlandığında PR ile birleştirilmelidir.
@@ -39,7 +105,7 @@ Bir branch tek bir sistem veya düzeltmeye odaklanmalı ve iş tamamlandığınd
 git switch main
 git fetch origin
 git pull --ff-only origin main
-git switch -c feature/task-name
+git switch -c feature/<owner>-<task-name>
 ```
 
 1. `main` branch'ine geçilir.
@@ -55,7 +121,7 @@ git status
 git diff
 git add <dosya-yollari>
 git commit -m "feat: describe the focused change"
-git push -u origin feature/task-name
+git push -u origin feature/<owner>-<task-name>
 ```
 
 8. GitHub üzerinde Pull Request açılır.
@@ -111,6 +177,7 @@ Mevcut geçmişi `git lfs migrate` ile yeniden yazmak ancak ekip onayıyla yapı
 
 ## Unreal asset koordinasyonu
 
+- Aynı `.uasset` veya `.umap` dosyası iki kişi tarafından aynı anda düzenlenmez.
 - Aynı Blueprint'i iki kişinin aynı anda düzenlemesinden kaçının.
 - Aynı map üzerinde çalışmadan önce sahiplik ve bölge paylaşımını konuşun.
 - Ana Character Blueprint'leri, ortak Data Asset'ler, Gameplay Tags ve ana map değişikliklerini duyurun.
@@ -165,13 +232,13 @@ Parola, token, API key, Steam private credential, kişisel environment dosyası 
 2. Repository klasörünü VS Code ile, `OperationMouse.uproject` dosyasını Unreal Editor ile açar.
 3. Terminalde `git status` ile yarım kalmış yerel değişiklik olup olmadığını kontrol eder.
 4. `git switch main`, `git fetch origin` ve `git pull --ff-only origin main` çalıştırır.
-5. Atanan iş için `git switch -c feature/task-name` ile branch açar.
+5. Atanan iş için `git switch -c feature/<owner>-<task-name>` ile rol prefix'ine uygun branch açar.
 6. Binary asset değiştirecekse ekipte aynı asset üzerinde çalışan biri olmadığını doğrular.
 7. C++ dosyalarını VS Code'da, Blueprint/map/asset dosyalarını Unreal Editor'da düzenler.
 8. VS Code'daki varsayılan Unreal build task'ını veya `Scripts/Build.ps1` dosyasını çalıştırır.
 9. Gameplay değişikliği ise gerekli solo ve Host + Client testlerini yapar.
 10. `git status` ve `git diff` ile yalnızca beklenen dosyaların değiştiğini doğrular.
 11. Dosyaları seçerek stage eder ve anlamlı bir commit oluşturur.
-12. Branch'i `git push -u origin feature/task-name` ile GitHub'a gönderir.
+12. Branch'i `git push -u origin feature/<owner>-<task-name>` ile GitHub'a gönderir.
 13. PR açar, kontrol listesini doldurur ve inceleme ister.
 14. PR onaylanıp `main` ile birleştirildikten sonra yerel `main` branch'ini yeniden günceller.
