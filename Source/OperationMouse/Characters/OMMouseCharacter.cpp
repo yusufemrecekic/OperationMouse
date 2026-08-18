@@ -333,7 +333,21 @@ void AOMMouseCharacter::StopInteraction()
 void AOMMouseCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : NormalWalkSpeed;
+	RefreshMaxWalkSpeed();
+}
+
+void AOMMouseCharacter::SetHeavyCarryMovementPenaltyActive(bool bActive)
+{
+	bHeavyCarryMovementPenaltyActive = bActive;
+	RefreshMaxWalkSpeed();
+}
+
+void AOMMouseCharacter::RefreshMaxWalkSpeed()
+{
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : NormalWalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = bHeavyCarryMovementPenaltyActive
+		? BaseSpeed * HeavyCarrySpeedMultiplier
+		: BaseSpeed;
 }
 
 void AOMMouseCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)

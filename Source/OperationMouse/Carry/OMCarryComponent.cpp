@@ -153,7 +153,7 @@ bool UOMCarryComponent::Drop()
 	}
 
 	AOMMouseCharacter* OwnerCharacter = Cast<AOMMouseCharacter>(GetOwner());
-	if (CarriedActor->GetCurrentHolder() != OwnerCharacter)
+	if (!CarriedActor->IsHeldBy(OwnerCharacter))
 	{
 		UE_LOG(
 			LogOperationMouse,

@@ -104,6 +104,7 @@ Repository setup: Complete
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
 - Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Core Host/Client synchronization passed; contention, disconnect/recovery, 3/4-player, physical two-PC and latency/loss evidence remain pending. Active-mission late join Carry state is deferred because controlled v5.1 currently rejects mission-time new joins; same-mission reconnect is V1 OUT.
+- Sprint 3 Heavy Carry gameplay foundation is implemented on Yusuf's branch only. Its holder/state replication, authoritative join/leave, contention, disconnect and adverse-network behavior intentionally remain unimplemented for Hilmi's network pass.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -127,15 +128,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (Gameplay complete for the tested core loop) / Hilmi Tunahan evidence and network approval pending
+Developer: Yusuf Emre (Heavy Carry gameplay foundation) / Hilmi Tunahan network implementation pending
 
-System: Sprint 2 Grab / Carry / Drop Closeout Audit
+System: Sprint 3 Heavy Carry Gameplay Foundation
 
-Branch: main (PR #12 merged); documentation closeout branch only
+Branch: `feature/yusuf-heavy-carry-foundation`
 
-Main files/assets: `UOMCarryComponent`, `AOMCarryableActor`, and `L_Sprint2_CarryTest`
+Main files/assets: `AOMHeavyCarryableActor`, reused `UOMCarryComponent`, character movement-penalty hook, and `L_Sprint3_HeavyCarryTest`
 
-Status: SPRINT 2 CORE HOST/CLIENT TEST PASSED - PRODUCTION GATE PARTIAL - NETWORK EDGE-CASE EVIDENCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: HEAVY CARRY GAMEPLAY FOUNDATION IMPLEMENTED - AUTOMATED VALIDATION PASSED - MANUAL HEAVY CARRY TEST PENDING - NETWORK HEAVY CARRY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

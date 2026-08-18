@@ -134,6 +134,11 @@ bool AOMCarryableActor::IsAvailableForGrab() const
 	return IsValid(this) && !IsActorBeingDestroyed() && !IsValid(CurrentHolder);
 }
 
+bool AOMCarryableActor::IsHeldBy(const AOMMouseCharacter* Character) const
+{
+	return IsValid(Character) && CurrentHolder == Character;
+}
+
 void AOMCarryableActor::ResetToHome()
 {
 	if (!HasAuthority())

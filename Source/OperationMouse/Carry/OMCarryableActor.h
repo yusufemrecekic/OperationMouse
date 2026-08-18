@@ -27,17 +27,18 @@ public:
 	virtual bool BeginInteraction_Implementation(AActor* Interactor) override;
 	virtual void CompleteInteraction_Implementation(AActor* Interactor) override;
 
-	bool BeginCarry(UOMCarryComponent* NewCarrier, USceneComponent* NewCarryPoint);
-	bool EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation);
+	virtual bool BeginCarry(UOMCarryComponent* NewCarrier, USceneComponent* NewCarryPoint);
+	virtual bool EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation);
+	virtual bool IsHeldBy(const AOMMouseCharacter* Character) const;
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
-	bool IsAvailableForGrab() const;
+	virtual bool IsAvailableForGrab() const;
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
 	AOMMouseCharacter* GetCurrentHolder() const { return CurrentHolder; }
 
 	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
-	void ResetToHome();
+	virtual void ResetToHome();
 
 protected:
 	virtual void BeginPlay() override;
