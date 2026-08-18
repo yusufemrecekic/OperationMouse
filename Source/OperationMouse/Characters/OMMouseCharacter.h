@@ -9,7 +9,9 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 class UOMInteractionComponent;
+class UOMCarryComponent;
 class UOMTraversalComponent;
+class USceneComponent;
 class USpringArmComponent;
 struct FInputActionValue;
 
@@ -64,6 +66,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
 
+	/** Stable gameplay attachment point; final grip placement remains a visual-design task. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Carry", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> CarryPoint;
+
 	/** Handles mantle detection, server validation, and the short traversal transition. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Traversal", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UOMTraversalComponent> TraversalComponent;
@@ -71,6 +77,10 @@ private:
 	/** Owns local focus/prompt handling and server-authoritative interaction requests. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Interaction", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UOMInteractionComponent> InteractionComponent;
+
+	/** Owns the lightweight Grab / Carry / Drop gameplay state. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Carry", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOMCarryComponent> CarryComponent;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> GameplayMappingContext;

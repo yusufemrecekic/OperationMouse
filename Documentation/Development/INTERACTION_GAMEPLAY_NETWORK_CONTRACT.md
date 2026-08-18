@@ -145,3 +145,17 @@ prompt does not reserve a target.
 - Hold cancellation passes with temporary latency enabled.
 - Logs identify requester, target, accepted/rejected result, and rejection reason.
 
+## Sprint 2 Carry gameplay hand-off (network approval pending)
+
+Sprint 2 Step 1 adds Yusuf-owned `UOMCarryComponent` gameplay state and an
+`AOMCarryableActor` that enters through the existing interaction lifecycle.
+`CompleteInteraction` hands an eligible object to the Carry component; the same
+Interact input drops the current object. Focus, prompt and Hold state remain
+separate from persistent Carry state.
+
+This is not Hilmi's final authority contract. Carry holder/object replication,
+client Drop requests, contention, disconnect, late join and latency behavior
+remain explicitly pending. The gameplay API (`CanGrab`, `TryGrab`, `Drop`,
+`IsCarrying`, `GetCarriedActor`) is the boundary those network rules should
+authorize without rewriting object gameplay behavior.
+

@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "../OperationMouse.h"
 #include "EnhancedInputComponent.h"
@@ -15,6 +16,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "../Interaction/OMInteractionComponent.h"
+#include "../Carry/OMCarryComponent.h"
 #include "TimerManager.h"
 #include "../Traversal/OMTraversalComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -54,8 +56,13 @@ AOMMouseCharacter::AOMMouseCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	CarryPoint = CreateDefaultSubobject<USceneComponent>(TEXT("CarryPoint"));
+	CarryPoint->SetupAttachment(GetCapsuleComponent());
+	CarryPoint->SetRelativeLocation(FVector(100.0f, 0.0f, 35.0f));
+
 	TraversalComponent = CreateDefaultSubobject<UOMTraversalComponent>(TEXT("TraversalComponent"));
 	InteractionComponent = CreateDefaultSubobject<UOMInteractionComponent>(TEXT("InteractionComponent"));
+	CarryComponent = CreateDefaultSubobject<UOMCarryComponent>(TEXT("CarryComponent"));
 
 	static ConstructorHelpers::FObjectFinder<UInputMappingContext> GameplayMappingContextAsset(
 		TEXT("/Game/OperationMouse/Input/IMC_Gameplay.IMC_Gameplay"));
@@ -110,6 +117,10 @@ AOMMouseCharacter::AOMMouseCharacter()
 void AOMMouseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (CarryComponent)
+	{
+		CarryComponent->SetCarryPoint(CarryPoint);
+	}
 	SetSprinting(false);
 }
 
@@ -299,6 +310,12 @@ void AOMMouseCharacter::StopCrouch()
 
 void AOMMouseCharacter::StartInteraction()
 {
+	if (CarryComponent && CarryComponent->IsCarrying())
+	{
+		CarryComponent->Drop();
+		return;
+	}
+
 	if (InteractionComponent)
 	{
 		InteractionComponent->BeginInteractionInput();
