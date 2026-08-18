@@ -15,6 +15,7 @@ CARRYABLE_MATERIAL_PATH = f"{MATERIAL_FOLDER}/MI_Sprint2_CarryableGray"
 
 
 def get_or_create_color_material(asset_path, color):
+    created = False
     material = (
         unreal.EditorAssetLibrary.load_asset(asset_path)
         if unreal.EditorAssetLibrary.does_asset_exist(asset_path)
@@ -37,12 +38,14 @@ def get_or_create_color_material(asset_path, color):
         if material is None:
             raise RuntimeError(f"Could not create {asset_path}")
         unreal.MaterialEditingLibrary.set_material_instance_parent(material, parent)
-    unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
-        material,
-        "Color",
-        color,
-    )
-    unreal.EditorAssetLibrary.save_loaded_asset(material)
+        created = True
+    if created:
+        unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
+            material,
+            "Color",
+            color,
+        )
+        unreal.EditorAssetLibrary.save_loaded_asset(material)
     return material
 
 
