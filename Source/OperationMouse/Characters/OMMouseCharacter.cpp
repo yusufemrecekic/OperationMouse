@@ -312,7 +312,7 @@ void AOMMouseCharacter::StartInteraction()
 {
 	if (CarryComponent && CarryComponent->IsCarrying())
 	{
-		CarryComponent->Drop();
+		CarryComponent->RequestDrop();
 		return;
 	}
 

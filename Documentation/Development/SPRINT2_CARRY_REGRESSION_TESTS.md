@@ -1,8 +1,8 @@
 # Sprint 2 Grab / Carry / Drop Regression Tests
 
-Run manual cases in `L_Sprint2_CarryTest`. The implementation is a Yusuf-owned
-gameplay foundation; Hilmi's authority/replication pass is intentionally not
-claimed by this document.
+Run manual cases in `L_Sprint2_CarryTest`. Server-authoritative Carry state and
+Drop requests are implemented, but multiplayer acceptance is not claimed until
+the pending Host + Client retest passes.
 
 | ID | Test | Current evidence |
 | --- | --- | --- |
@@ -21,6 +21,20 @@ claimed by this document.
 | C13 | Sprint 1 Door still opens | **MANUAL REGRESSION PENDING** |
 | C14 | Existing interaction prompt/focus remains usable | Interaction component/interface structure **PASSED**; **MANUAL PENDING** |
 | C15 | Accepted Sprint 1 map still loads | Automated Sprint 1 validation **PASSED** |
+
+## Multiplayer Carry retest (pending)
+
+1. Client grabs Carryable A: Client, Server and other Client windows show the
+   same holder and CarryPoint attachment.
+2. The owning Client presses Interact again: server-authoritative Drop is
+   visible in all windows and the object becomes interactable again.
+3. Host repeats Grab and Drop with the same result.
+4. Host and Client request the same available object as closely together as
+   practical: exactly one becomes holder; the loser stays Idle.
+5. Reset while an object is carried: all windows converge to no holder, Idle
+   Character Carry state and one available object at its home transform.
+6. Destroy/end the holder during Carry: the authoritative relationship clears
+   without a duplicate or stale carried object.
 
 ## Manual Standalone route
 
@@ -44,12 +58,12 @@ claimed by this document.
 ## Acceptance boundary
 
 - `MANUAL GAMEPLAY TEST: PENDING`
-- `NETWORK AUTHORITY TEST: PENDING`
+- `MULTIPLAYER MANUAL TEST: PENDING`
 - `GAMEPAD MANUAL TEST: PENDING`
 
-Host/Client contention, disconnect, late join, latency and final Carry
-replication remain Hilmi-owned follow-up work. These are not Sprint 2 Step 1
-pass claims.
+Host/Client Carry synchronization and contention require the pending manual
+retest. Final disconnect polish, late join and latency evidence remain network
+follow-up work and are not pass claims.
 
 Technical evidence for this implementation: Editor and Game Development builds
 passed, Sprint 1 and Sprint 2 automated validation passed, and

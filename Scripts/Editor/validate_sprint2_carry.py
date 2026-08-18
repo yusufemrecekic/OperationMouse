@@ -1,5 +1,7 @@
 """Read-only structural validation for the Sprint 2 Carry gameplay foundation."""
 
+from pathlib import Path
+
 import unreal
 
 
@@ -20,7 +22,50 @@ def fail(message):
     raise RuntimeError(message)
 
 
+def validate_network_contract_source():
+    source_root = Path(unreal.Paths.project_dir()) / "Source" / "OperationMouse"
+    files = {
+        "carry_h": (source_root / "Carry" / "OMCarryComponent.h").read_text(encoding="utf-8"),
+        "carry_cpp": (source_root / "Carry" / "OMCarryComponent.cpp").read_text(encoding="utf-8"),
+        "actor_h": (source_root / "Carry" / "OMCarryableActor.h").read_text(encoding="utf-8"),
+        "actor_cpp": (source_root / "Carry" / "OMCarryableActor.cpp").read_text(encoding="utf-8"),
+        "interaction_cpp": (source_root / "Interaction" / "OMInteractionComponent.cpp").read_text(encoding="utf-8"),
+        "character_cpp": (source_root / "Characters" / "OMMouseCharacter.cpp").read_text(encoding="utf-8"),
+    }
+    required_tokens = {
+        "carry_h": (
+            "ReplicatedUsing = OnRep_CarriedActor",
+            "UFUNCTION(Server, Reliable)",
+            "ServerRequestDrop",
+        ),
+        "carry_cpp": (
+            "SetIsReplicatedByDefault(true)",
+            "DOREPLIFETIME(UOMCarryComponent, CarriedActor)",
+            "Reason=HolderMismatch",
+            "AlreadyCarrying",
+            "CarryableUnavailable",
+        ),
+        "actor_h": ("ReplicatedUsing = OnRep_CurrentHolder",),
+        "actor_cpp": (
+            "DOREPLIFETIME(AOMCarryableActor, CurrentHolder)",
+            "ApplyCarryPresentation",
+        ),
+        "interaction_cpp": (
+            "ServerBeginInteraction_Implementation",
+            "Execute_CompleteInteraction",
+        ),
+        "character_cpp": ("CarryComponent->RequestDrop()",),
+    }
+    for file_key, tokens in required_tokens.items():
+        for token in tokens:
+            if token not in files[file_key]:
+                fail(f"Network Carry contract token missing in {file_key}: {token}")
+
+    unreal.log("OM_SPRINT2_VALIDATION|PASS|NETWORK_SOURCE_CONTRACT")
+
+
 def validate():
+    validate_network_contract_source()
     level_subsystem = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     if not unreal.EditorAssetLibrary.does_asset_exist(SPRINT1_MAP_PATH):

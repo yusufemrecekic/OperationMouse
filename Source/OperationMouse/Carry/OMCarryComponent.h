@@ -22,6 +22,7 @@ class OPERATIONMOUSE_API UOMCarryComponent : public UActorComponent
 
 public:
 	UOMCarryComponent();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/** Supplies the stable scene attachment used while carrying. */
 	void SetCarryPoint(USceneComponent* NewCarryPoint);
@@ -32,6 +33,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
 	bool TryGrab(AActor* Candidate);
 
+	/** Routes an owning client's Drop input to the authoritative server. */
+	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
+	void RequestDrop();
+
+	/** Executes Drop only on the authoritative Character. */
 	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
 	bool Drop();
 
@@ -41,6 +47,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
 	AOMCarryableActor* GetCarriedActor() const;
 
+	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
+	EOMCarryState GetCarryState() const;
+
+	USceneComponent* GetCarryPoint() const { return CarryPoint; }
+
 	/** Targeted recovery hook used by a carryable before it resets to its home transform. */
 	void ReleaseForRecovery(AOMCarryableActor* Carryable);
 
@@ -49,7 +60,13 @@ protected:
 
 private:
 	bool CanGrabWithReason(AActor* Candidate, FString& OutReason);
-	void ClearCarryState();
+	void SetAuthoritativeCarriedActor(AOMCarryableActor* NewCarriedActor);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRequestDrop();
+
+	UFUNCTION()
+	void OnRep_CarriedActor(AOMCarryableActor* PreviousCarriedActor);
 
 	UFUNCTION()
 	void HandleCarriedActorDestroyed(AActor* DestroyedActor);
@@ -57,13 +74,11 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<USceneComponent> CarryPoint;
 
-	UPROPERTY(Transient)
+	/** Server-owned Carry relationship replicated to owner and simulated clients. */
+	UPROPERTY(ReplicatedUsing = OnRep_CarriedActor, VisibleAnywhere, Category = "Operation Mouse|Carry")
 	TObjectPtr<AOMCarryableActor> CarriedActor;
 
-	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Carry")
-	EOMCarryState CarryState = EOMCarryState::Idle;
-
-	/** Gameplay-only drop placement. Network authority will be reviewed separately by Hilmi. */
+	/** Server-chosen gameplay drop placement. */
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry", meta = (ClampMin = "0.0"))
 	float DropForwardDistance = 140.0f;
 

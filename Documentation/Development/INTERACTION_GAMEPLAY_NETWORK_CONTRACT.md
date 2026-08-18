@@ -145,17 +145,36 @@ prompt does not reserve a target.
 - Hold cancellation passes with temporary latency enabled.
 - Logs identify requester, target, accepted/rejected result, and rejection reason.
 
-## Sprint 2 Carry gameplay hand-off (network approval pending)
+## Sprint 2 Carry authority contract
 
-Sprint 2 Step 1 adds Yusuf-owned `UOMCarryComponent` gameplay state and an
-`AOMCarryableActor` that enters through the existing interaction lifecycle.
-`CompleteInteraction` hands an eligible object to the Carry component; the same
-Interact input drops the current object. Focus, prompt and Hold state remain
-separate from persistent Carry state.
+Sprint 2 Carry has one server-owned relationship represented on both sides of
+the invariant:
 
-This is not Hilmi's final authority contract. Carry holder/object replication,
-client Drop requests, contention, disconnect, late join and latency behavior
-remain explicitly pending. The gameplay API (`CanGrab`, `TryGrab`, `Drop`,
-`IsCarrying`, `GetCarriedActor`) is the boundary those network rules should
-authorize without rewriting object gameplay behavior.
+- Character `UOMCarryComponent::CarriedActor` replicates to owner and simulated
+  clients;
+- `AOMCarryableActor::CurrentHolder` replicates to all relevant clients;
+- on the server, either both references describe the same relationship or both
+  are empty.
+
+Grab uses the existing owning-Character interaction RPC. The server repeats
+range, line-of-sight, Character-state and interactable availability validation,
+then `CompleteInteraction` calls `TryGrab` on the server. The first server
+request that sets `CurrentHolder` wins; later requests see the object as
+unavailable.
+
+The owning client receives `CarriedActor`, so the same Interact input routes to
+`ServerRequestDrop` on its replicated Character component. The server verifies
+that the requesting Character is the Carryable's actual `CurrentHolder` before
+detaching and restoring collision/physics. A different client cannot invoke an
+RPC on that Character component and cannot pass the holder check.
+
+`OnRep_CurrentHolder` reconciles visual attachment to the holder's
+skeleton-independent CarryPoint on owning and simulated clients. Normal actor
+attachment/movement replication carries the transform; no multicast or
+per-frame transform RPC is used. The Carryable remains server-owned as a world
+actor; `CurrentHolder` is gameplay holder identity, not RPC ownership.
+
+Destroyed-object, holder EndPlay, normal Drop and Reset clear the relationship
+on the server and replicate Idle/available state. Final disconnect polish,
+late-join evidence and latency acceptance remain pending manual/network tests.
 

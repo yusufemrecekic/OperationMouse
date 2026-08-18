@@ -6,6 +6,7 @@
 #include "Components/TextRenderComponent.h"
 #include "../Characters/OMMouseCharacter.h"
 #include "../OperationMouse.h"
+#include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
 
 AOMCarryableActor::AOMCarryableActor()
@@ -65,11 +66,17 @@ bool AOMCarryableActor::CanInteract_Implementation(AActor* Interactor) const
 
 bool AOMCarryableActor::BeginInteraction_Implementation(AActor* Interactor)
 {
-	return CanInteract_Implementation(Interactor);
+	return HasAuthority() && CanInteract_Implementation(Interactor);
 }
 
 void AOMCarryableActor::CompleteInteraction_Implementation(AActor* Interactor)
 {
+	if (!HasAuthority())
+	{
+		UE_LOG(LogOperationMouse, Warning, TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=NotAuthority"), *GetNameSafe(Interactor), *GetName());
+		return;
+	}
+
 	AOMMouseCharacter* Character = Cast<AOMMouseCharacter>(Interactor);
 	UOMCarryComponent* CarryComponent = Character ? Character->FindComponentByClass<UOMCarryComponent>() : nullptr;
 	if (!CarryComponent || !CarryComponent->TryGrab(this))
@@ -77,7 +84,7 @@ void AOMCarryableActor::CompleteInteraction_Implementation(AActor* Interactor)
 		UE_LOG(
 			LogOperationMouse,
 			Log,
-			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=GameplayHandoffRejected Authority=PENDING"),
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=GameplayHandoffRejected"),
 			*GetNameSafe(Interactor),
 			*GetName());
 	}
@@ -85,52 +92,139 @@ void AOMCarryableActor::CompleteInteraction_Implementation(AActor* Interactor)
 
 bool AOMCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneComponent* NewCarryPoint)
 {
-	if (!IsAvailableForGrab() || !IsValid(NewCarrier) || !IsValid(NewCarryPoint))
+	if (!HasAuthority() || !IsAvailableForGrab() || !IsValid(NewCarrier) || !IsValid(NewCarryPoint))
 	{
 		return false;
 	}
 
-	CurrentCarrier = NewCarrier;
+	AOMMouseCharacter* NewHolder = Cast<AOMMouseCharacter>(NewCarrier->GetOwner());
+	if (!IsValid(NewHolder))
+	{
+		return false;
+	}
+
+	CurrentHolder = NewHolder;
+	ApplyCarryPresentation(NewCarryPoint);
+	ForceNetUpdate();
+	return true;
+}
+
+bool AOMCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation)
+{
+	if (!HasAuthority() || !IsValid(RequestingCarrier) || CurrentHolder != RequestingCarrier->GetOwner())
+	{
+		return false;
+	}
+
+	CurrentHolder = nullptr;
+	FTransform DropTransform = GetActorTransform();
+	DropTransform.SetLocation(DropLocation);
+	DropTransform.SetRotation(FQuat::Identity);
+	RestoreWorldState(DropTransform);
+	ForceNetUpdate();
+	return true;
+}
+
+bool AOMCarryableActor::IsAvailableForGrab() const
+{
+	return IsValid(this) && !IsActorBeingDestroyed() && !IsValid(CurrentHolder);
+}
+
+void AOMCarryableActor::ResetToHome()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (IsValid(CurrentHolder))
+	{
+		if (UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>())
+		{
+			HolderCarryComponent->ReleaseForRecovery(this);
+		}
+	}
+
+	CurrentHolder = nullptr;
+	RestoreWorldState(HomeTransform);
+	ForceNetUpdate();
+	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Reset] Target=%s Authority=Server"), *GetName());
+}
+
+void AOMCarryableActor::OnRep_CurrentHolder(AOMMouseCharacter* PreviousHolder)
+{
+	if (IsValid(CurrentHolder))
+	{
+		UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>();
+		if (HolderCarryComponent && IsValid(HolderCarryComponent->GetCarryPoint()))
+		{
+			ApplyCarryPresentation(HolderCarryComponent->GetCarryPoint());
+		}
+		else
+		{
+			UE_LOG(
+				LogOperationMouse,
+				Warning,
+				TEXT("[Carry][Replicated] Target=%s Holder=%s Result=PendingPresentation Reason=MissingCarryPoint"),
+				*GetName(),
+				*GetNameSafe(CurrentHolder));
+		}
+	}
+	else
+	{
+		ApplyDroppedPresentation();
+	}
+
+	UE_LOG(
+		LogOperationMouse,
+		Log,
+		TEXT("[Carry][Replicated] Target=%s PreviousHolder=%s CurrentHolder=%s"),
+		*GetName(),
+		*GetNameSafe(PreviousHolder),
+		*GetNameSafe(CurrentHolder));
+}
+
+void AOMCarryableActor::SaveWorldStateIfNeeded()
+{
+	if (bHasSavedWorldState || !Mesh)
+	{
+		return;
+	}
+
 	SavedCollisionEnabled = Mesh->GetCollisionEnabled();
 	bSavedSimulatePhysics = Mesh->IsSimulatingPhysics();
+	bHasSavedWorldState = true;
+}
+
+void AOMCarryableActor::ApplyCarryPresentation(USceneComponent* NewCarryPoint)
+{
+	if (!IsValid(NewCarryPoint) || !Mesh)
+	{
+		return;
+	}
+
+	SaveWorldStateIfNeeded();
 	Mesh->SetSimulatePhysics(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttachToComponent(NewCarryPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	SetActorRelativeLocation(FVector::ZeroVector);
 	SetActorRelativeRotation(FRotator::ZeroRotator);
 	UpdateStatusText();
-	return true;
 }
 
-void AOMCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation)
+void AOMCarryableActor::ApplyDroppedPresentation()
 {
-	if (CurrentCarrier != RequestingCarrier)
+	if (!Mesh)
 	{
 		return;
 	}
 
-	CurrentCarrier = nullptr;
-	FTransform DropTransform = GetActorTransform();
-	DropTransform.SetLocation(DropLocation);
-	DropTransform.SetRotation(FQuat::Identity);
-	RestoreWorldState(DropTransform);
-}
-
-bool AOMCarryableActor::IsAvailableForGrab() const
-{
-	return IsValid(this) && !IsActorBeingDestroyed() && !IsValid(CurrentCarrier);
-}
-
-void AOMCarryableActor::ResetToHome()
-{
-	if (IsValid(CurrentCarrier))
-	{
-		CurrentCarrier->ReleaseForRecovery(this);
-	}
-
-	CurrentCarrier = nullptr;
-	RestoreWorldState(HomeTransform);
-	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Reset] Target=%s Authority=PENDING"), *GetName());
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	Mesh->SetSimulatePhysics(false);
+	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
+	Mesh->SetSimulatePhysics(bSavedSimulatePhysics);
+	bHasSavedWorldState = false;
+	UpdateStatusText();
 }
 
 void AOMCarryableActor::RestoreWorldState(const FTransform& TargetTransform)
@@ -140,6 +234,7 @@ void AOMCarryableActor::RestoreWorldState(const FTransform& TargetTransform)
 	SetActorTransform(TargetTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
 	Mesh->SetSimulatePhysics(bSavedSimulatePhysics);
+	bHasSavedWorldState = false;
 	UpdateStatusText();
 }
 
@@ -150,9 +245,15 @@ void AOMCarryableActor::UpdateStatusText()
 		return;
 	}
 
-	const bool bCarried = IsValid(CurrentCarrier);
+	const bool bCarried = IsValid(CurrentHolder);
 	StatusText->SetText(bCarried
 		? NSLOCTEXT("OperationMouse", "CarryableCarriedState", "CARRYING")
 		: NSLOCTEXT("OperationMouse", "CarryableReadyState", "CARRYABLE: READY"));
 	StatusText->SetTextRenderColor(bCarried ? FColor::Yellow : FColor::Cyan);
+}
+
+void AOMCarryableActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOMCarryableActor, CurrentHolder);
 }

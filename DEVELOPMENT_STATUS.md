@@ -8,9 +8,9 @@ Sprint 1 Gameplay Foundation / VS-Y01
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 2 Step 1 Grab / Carry / Drop gameplay foundation implemented and technically validated; manual gameplay, network authority, and physical gamepad evidence remain pending
+Current: Sprint 2 Grab / Carry / Drop server-authority synchronization fix implemented; technical validation and manual two-player evidence are pending
 
-Next: Yusuf manual Standalone Grab / Carry / Drop test; after gameplay acceptance, Hilmi network authority/replication work remains NOT STARTED
+Next: Complete builds/automated validation, then Yusuf two-player Grab / Carry / Drop, contention and recovery retest; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -79,6 +79,7 @@ Next: Yusuf manual Standalone Grab / Carry / Drop test; after gameplay acceptanc
 - Dedicated `L_Sprint2_CarryTest` contains two separated carryables, a Drop area, two PlayerStarts, a Reset/recovery fixture, readable route labels, and the prototype GameMode without modifying the accepted Sprint 1 map.
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds, Sprint 1 regression validation, Sprint 2 structural validation, and Sprint 2 Map Check (0 errors / 0 warnings) passed. Manual gameplay acceptance remains pending.
 - Initial Sprint 2 manual testing confirmed Standalone Grab / Carry / Drop works and identified two integration issues: the technical map was too dark and Character facing followed movement instead of mouse yaw. The focused follow-up uses controller-yaw Character rotation (`Use Controller Rotation Yaw=true`, `Orient Rotation to Movement=false`) and movable shadowless graybox lights with precomputed lighting disabled. Editor/Game builds, Sprint 1/2 validation, and Map Check (0 errors / 0 warnings) pass; final manual gameplay retest remains pending.
+- Two-player Sprint 2 testing exposed that Grab completed only on the server while `UOMCarryComponent::CarriedActor` and the Carryable holder were transient, leaving the owning Client locally Idle and unable to request Drop. The focused network fix replicates the server-owned Character/Carryable relationship, reconciles CarryPoint attachment through `OnRep`, routes owner Drop input through a Character-component Server RPC, and validates the actual holder. Multiplayer manual retest remains pending; final disconnect/late-join/latency evidence is not yet claimed.
 
 ## Repository
 
@@ -99,7 +100,7 @@ Repository setup: Complete
 - Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
-- Sprint 2 Step 1 Carry state is intentionally gameplay-only: final client Drop request, holder/object replication, contention, disconnect, late join and latency behavior remain Hilmi-owned and are not accepted yet.
+- Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Multiplayer acceptance, final disconnect/late-join behavior and latency evidence remain pending.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -131,7 +132,7 @@ Branch: feature/sprint2-grab-carry-foundation
 
 Main files/assets: `UOMCarryComponent`, `AOMCarryableActor`, and `L_Sprint2_CarryTest`
 
-Status: SPRINT 2 STEP 1 TECHNICAL VALIDATION PASSED - MANUAL GAMEPLAY TEST PENDING - NETWORK AUTHORITY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: SPRINT 2 NETWORK CARRY FIX - MULTIPLAYER MANUAL TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

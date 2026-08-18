@@ -2,11 +2,14 @@
 
 #include "OMCarryableActor.h"
 #include "Components/SceneComponent.h"
+#include "../Characters/OMMouseCharacter.h"
+#include "Net/UnrealNetwork.h"
 #include "../OperationMouse.h"
 
 UOMCarryComponent::UOMCarryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	SetIsReplicatedByDefault(true);
 }
 
 void UOMCarryComponent::SetCarryPoint(USceneComponent* NewCarryPoint)
@@ -28,14 +31,9 @@ bool UOMCarryComponent::CanGrabWithReason(AActor* Candidate, FString& OutReason)
 		return false;
 	};
 
-	if (CarryState == EOMCarryState::Carrying && !IsValid(CarriedActor))
+	if (CarriedActor && !IsValid(CarriedActor))
 	{
-		UE_LOG(
-			LogOperationMouse,
-			Log,
-			TEXT("[Carry][Recovered] Carrier=%s Target=None Reason=InvalidCarriedActor Authority=PENDING"),
-			*GetNameSafe(GetOwner()));
-		ClearCarryState();
+		return Reject(TEXT("InvalidCarriedActor"));
 	}
 
 	if (!IsValid(GetOwner()))
@@ -46,7 +44,7 @@ bool UOMCarryComponent::CanGrabWithReason(AActor* Candidate, FString& OutReason)
 	{
 		return Reject(TEXT("MissingCarryPoint"));
 	}
-	if (CarryState != EOMCarryState::Idle || IsValid(CarriedActor))
+	if (IsValid(CarriedActor))
 	{
 		return Reject(TEXT("AlreadyCarrying"));
 	}
@@ -71,13 +69,24 @@ bool UOMCarryComponent::CanGrabWithReason(AActor* Candidate, FString& OutReason)
 
 bool UOMCarryComponent::TryGrab(AActor* Candidate)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(
+			LogOperationMouse,
+			Warning,
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=NotAuthority"),
+			*GetNameSafe(GetOwner()),
+			*GetNameSafe(Candidate));
+		return false;
+	}
+
 	FString FailureReason;
 	if (!CanGrabWithReason(Candidate, FailureReason))
 	{
 		UE_LOG(
 			LogOperationMouse,
 			Log,
-			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=%s Authority=PENDING"),
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=%s"),
 			*GetNameSafe(GetOwner()),
 			*GetNameSafe(Candidate),
 			*FailureReason);
@@ -90,50 +99,89 @@ bool UOMCarryComponent::TryGrab(AActor* Candidate)
 		UE_LOG(
 			LogOperationMouse,
 			Log,
-			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=BeginCarryRejected Authority=PENDING"),
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=BeginCarryRejected"),
 			*GetNameSafe(GetOwner()),
 			*GetNameSafe(Candidate));
 		return false;
 	}
 
-	CarriedActor = Carryable;
-	CarryState = EOMCarryState::Carrying;
+	SetAuthoritativeCarriedActor(Carryable);
 	Carryable->OnDestroyed.AddDynamic(this, &UOMCarryComponent::HandleCarriedActorDestroyed);
 	UE_LOG(
 		LogOperationMouse,
 		Log,
-		TEXT("[Carry][Grabbed] Carrier=%s Target=%s Authority=PENDING"),
+		TEXT("[Carry][Grabbed] Carrier=%s Target=%s Authority=Server"),
 		*GetNameSafe(GetOwner()),
 		*GetNameSafe(CarriedActor));
 	return true;
 }
 
+void UOMCarryComponent::RequestDrop()
+{
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		Drop();
+		return;
+	}
+
+	ServerRequestDrop();
+}
+
+void UOMCarryComponent::ServerRequestDrop_Implementation()
+{
+	Drop();
+}
+
 bool UOMCarryComponent::Drop()
 {
-	if (!IsValid(CarriedActor) || CarryState != EOMCarryState::Carrying)
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogOperationMouse, Warning, TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=NotAuthority"), *GetNameSafe(GetOwner()), *GetNameSafe(CarriedActor));
+		return false;
+	}
+
+	if (!IsValid(CarriedActor))
 	{
 		UE_LOG(
 			LogOperationMouse,
 			Log,
-			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=NotCarrying Authority=PENDING"),
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=NotCarrying"),
 			*GetNameSafe(GetOwner()),
 			*GetNameSafe(CarriedActor));
-		ClearCarryState();
+		SetAuthoritativeCarriedActor(nullptr);
+		return false;
+	}
+
+	AOMMouseCharacter* OwnerCharacter = Cast<AOMMouseCharacter>(GetOwner());
+	if (CarriedActor->GetCurrentHolder() != OwnerCharacter)
+	{
+		UE_LOG(
+			LogOperationMouse,
+			Warning,
+			TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=HolderMismatch ActualHolder=%s"),
+			*GetNameSafe(GetOwner()),
+			*GetNameSafe(CarriedActor),
+			*GetNameSafe(CarriedActor->GetCurrentHolder()));
+		SetAuthoritativeCarriedActor(nullptr);
 		return false;
 	}
 
 	AOMCarryableActor* DroppedActor = CarriedActor;
-	DroppedActor->OnDestroyed.RemoveDynamic(this, &UOMCarryComponent::HandleCarriedActorDestroyed);
 	const FVector DropLocation = GetOwner()->GetActorLocation()
 		+ GetOwner()->GetActorForwardVector() * DropForwardDistance
 		+ FVector::UpVector * DropHeightOffset;
-	ClearCarryState();
-	DroppedActor->EndCarry(this, DropLocation);
+	if (!DroppedActor->EndCarry(this, DropLocation))
+	{
+		UE_LOG(LogOperationMouse, Warning, TEXT("[Carry][Rejected] Carrier=%s Target=%s Reason=EndCarryRejected"), *GetNameSafe(GetOwner()), *GetNameSafe(DroppedActor));
+		return false;
+	}
+	DroppedActor->OnDestroyed.RemoveDynamic(this, &UOMCarryComponent::HandleCarriedActorDestroyed);
+	SetAuthoritativeCarriedActor(nullptr);
 
 	UE_LOG(
 		LogOperationMouse,
 		Log,
-		TEXT("[Carry][Dropped] Carrier=%s Target=%s Authority=PENDING"),
+		TEXT("[Carry][Dropped] Carrier=%s Target=%s Authority=Server"),
 		*GetNameSafe(GetOwner()),
 		*GetNameSafe(DroppedActor));
 	return true;
@@ -141,7 +189,12 @@ bool UOMCarryComponent::Drop()
 
 bool UOMCarryComponent::IsCarrying() const
 {
-	return CarryState == EOMCarryState::Carrying && IsValid(CarriedActor);
+	return IsValid(CarriedActor);
+}
+
+EOMCarryState UOMCarryComponent::GetCarryState() const
+{
+	return IsCarrying() ? EOMCarryState::Carrying : EOMCarryState::Idle;
 }
 
 AOMCarryableActor* UOMCarryComponent::GetCarriedActor() const
@@ -151,6 +204,11 @@ AOMCarryableActor* UOMCarryComponent::GetCarriedActor() const
 
 void UOMCarryComponent::ReleaseForRecovery(AOMCarryableActor* Carryable)
 {
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	if (CarriedActor != Carryable)
 	{
 		return;
@@ -160,24 +218,20 @@ void UOMCarryComponent::ReleaseForRecovery(AOMCarryableActor* Carryable)
 	{
 		CarriedActor->OnDestroyed.RemoveDynamic(this, &UOMCarryComponent::HandleCarriedActorDestroyed);
 	}
-	ClearCarryState();
+	SetAuthoritativeCarriedActor(nullptr);
 	UE_LOG(
 		LogOperationMouse,
 		Log,
-		TEXT("[Carry][Recovered] Carrier=%s Target=%s Reason=TargetReset Authority=PENDING"),
+		TEXT("[Carry][Recovered] Carrier=%s Target=%s Reason=TargetReset Authority=Server"),
 		*GetNameSafe(GetOwner()),
 		*GetNameSafe(Carryable));
 }
 
 void UOMCarryComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (IsCarrying())
+	if (GetOwner() && GetOwner()->HasAuthority() && IsCarrying())
 	{
 		Drop();
-	}
-	else
-	{
-		ClearCarryState();
 	}
 
 	Super::EndPlay(EndPlayReason);
@@ -193,14 +247,37 @@ void UOMCarryComponent::HandleCarriedActorDestroyed(AActor* DestroyedActor)
 	UE_LOG(
 		LogOperationMouse,
 		Log,
-		TEXT("[Carry][Recovered] Carrier=%s Target=%s Reason=TargetDestroyed Authority=PENDING"),
+		TEXT("[Carry][Recovered] Carrier=%s Target=%s Reason=TargetDestroyed Authority=Server"),
 		*GetNameSafe(GetOwner()),
 		*GetNameSafe(DestroyedActor));
-	ClearCarryState();
+	SetAuthoritativeCarriedActor(nullptr);
 }
 
-void UOMCarryComponent::ClearCarryState()
+void UOMCarryComponent::SetAuthoritativeCarriedActor(AOMCarryableActor* NewCarriedActor)
 {
-	CarriedActor = nullptr;
-	CarryState = EOMCarryState::Idle;
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	CarriedActor = NewCarriedActor;
+	GetOwner()->ForceNetUpdate();
+}
+
+void UOMCarryComponent::OnRep_CarriedActor(AOMCarryableActor* PreviousCarriedActor)
+{
+	UE_LOG(
+		LogOperationMouse,
+		Log,
+		TEXT("[Carry][Replicated] Carrier=%s Previous=%s Current=%s State=%s"),
+		*GetNameSafe(GetOwner()),
+		*GetNameSafe(PreviousCarriedActor),
+		*GetNameSafe(CarriedActor),
+		IsCarrying() ? TEXT("Carrying") : TEXT("Idle"));
+}
+
+void UOMCarryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UOMCarryComponent, CarriedActor);
 }
