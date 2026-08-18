@@ -45,10 +45,19 @@ def validate_network_contract_source():
             "AlreadyCarrying",
             "CarryableUnavailable",
         ),
-        "actor_h": ("ReplicatedUsing = OnRep_CurrentHolder",),
+        "actor_h": (
+            "ReplicatedUsing = OnRep_CurrentHolder",
+            "ReplicatedUsing = OnRep_WorldStateRevision",
+            "AuthoritativeWorldTransform",
+        ),
         "actor_cpp": (
             "DOREPLIFETIME(AOMCarryableActor, CurrentHolder)",
+            "DOREPLIFETIME(AOMCarryableActor, AuthoritativeWorldTransform)",
+            "DOREPLIFETIME(AOMCarryableActor, WorldStateRevision)",
             "ApplyCarryPresentation",
+            "PublishAuthoritativeWorldState",
+            "SetPhysicsLinearVelocity(FVector::ZeroVector)",
+            "SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector)",
         ),
         "interaction_cpp": (
             "ServerBeginInteraction_Implementation",
@@ -100,6 +109,11 @@ def validate():
         fail(f"Expected 2 carryables, found {len(carryables)}")
     if len({actor.get_actor_label() for actor in carryables}) != 2:
         fail("Carryable labels are not unique")
+    carryable_cdo = unreal.get_default_object(carryable_class)
+    if not carryable_cdo.get_editor_property("replicates"):
+        fail("AOMCarryableActor replication is disabled")
+    if not carryable_cdo.get_editor_property("replicate_movement"):
+        fail("AOMCarryableActor movement replication is disabled")
 
     reset_actors = [
         actor
@@ -125,15 +139,23 @@ def validate():
     if not world.get_world_settings().get_editor_property("force_no_precomputed_lighting"):
         fail("Sprint 2 map still depends on precomputed lighting")
 
-    fill_lights = [
-        actor for actor in actors if actor.get_actor_label().startswith("Sprint2_FillLight_")
-    ]
-    if len(fill_lights) != 3:
-        fail(f"Expected 3 technical fill lights, found {len(fill_lights)}")
-    for actor in fill_lights:
-        component = actor.get_component_by_class(unreal.PointLightComponent)
-        if component is None or component.get_editor_property("mobility") != unreal.ComponentMobility.MOVABLE:
-            fail(f"{actor.get_actor_label()} is not a movable PointLight")
+    if any(actor.get_actor_label().startswith("Sprint2_FillLight_") for actor in actors):
+        fail("Obsolete high-intensity fill lights remain in the Sprint 2 map")
+    required_daylight = {
+        "Sprint2_DirectionalLight",
+        "Sprint2_SkyLight",
+        "Sprint2_SkyAtmosphere",
+        "Sprint2_PostProcess",
+    }
+    actor_labels = {actor.get_actor_label() for actor in actors}
+    missing_daylight = sorted(required_daylight - actor_labels)
+    if missing_daylight:
+        fail(f"Missing neutral daylight actors: {missing_daylight}")
+    post_process = next(
+        actor for actor in actors if actor.get_actor_label() == "Sprint2_PostProcess"
+    )
+    if not post_process.get_editor_property("unbound"):
+        fail("Sprint 2 technical exposure is not fixed globally")
 
     route_x = sorted(actor.get_actor_location().x for actor in carryables + reset_actors)
     if route_x[1] - route_x[0] < 500.0 or route_x[2] - route_x[1] < 400.0:
@@ -143,14 +165,18 @@ def validate():
         if not actor.get_actor_label().startswith("Sprint2_Label_"):
             continue
         rotation = actor.get_actor_rotation()
+        scale = actor.get_actor_scale3d()
         if abs(abs(rotation.yaw) - 180.0) > 0.1 or abs(rotation.pitch) > 0.1 or abs(rotation.roll) > 0.1:
             fail(f"Unreadable label rotation: {actor.get_actor_label()} {rotation}")
+        if scale.x <= 0.0 or scale.y <= 0.0 or scale.z <= 0.0:
+            fail(f"Mirrored label scale: {actor.get_actor_label()} {scale}")
 
     unreal.log(
         "OM_SPRINT2_VALIDATION|PASS|"
         f"carryables={len(carryables)}|starts={len(starts)}|reset={len(reset_actors)}|"
         "carry_component=present|interaction_regression=present|prototype_game_mode=present|"
-        "controller_yaw=present|movable_debug_lighting=present"
+        "controller_yaw=present|neutral_daylight_debug_lighting=present|"
+        "authoritative_world_reconciliation=present"
     )
     unreal.log("OM_SPRINT2_VALIDATION|FINAL|PASS")
 

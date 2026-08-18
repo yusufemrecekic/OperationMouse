@@ -27,13 +27,16 @@ the pending Host + Client retest passes.
 1. Client grabs Carryable A: Client, Server and other Client windows show the
    same holder and CarryPoint attachment.
 2. The owning Client presses Interact again: server-authoritative Drop is
-   visible in all windows and the object becomes interactable again.
+   visible in all windows, server physics settles through ReplicatedMovement,
+   no Client copy remains suspended, and the object becomes interactable again.
 3. Host repeats Grab and Drop with the same result.
 4. Host and Client request the same available object as closely together as
    practical: exactly one becomes holder; the loser stays Idle.
 5. Reset while an object is carried: all windows converge to no holder, Idle
-   Character Carry state and one available object at its home transform.
-6. Destroy/end the holder during Carry: the authoritative relationship clears
+   Character Carry state and one available object at its exact home transform.
+6. Reset an idle and a recently dropped object: every window receives the new
+   world-state revision and converges to the same home location and rotation.
+7. Destroy/end the holder during Carry: the authoritative relationship clears
    without a duplicate or stale carried object.
 
 ## Manual Standalone route
@@ -65,6 +68,7 @@ Host/Client Carry synchronization and contention require the pending manual
 retest. Final disconnect polish, late join and latency evidence remain network
 follow-up work and are not pass claims.
 
-Technical evidence for this implementation: Editor and Game Development builds
-passed, Sprint 1 and Sprint 2 automated validation passed, and
-`L_Sprint2_CarryTest` Map Check reported 0 errors / 0 warnings.
+Technical evidence for the Drop/Reset reconciliation and neutral daylight-map
+follow-up: Editor and Game Development builds passed, Sprint 1 and Sprint 2
+automated validation passed, and `L_Sprint2_CarryTest` Map Check reported
+0 errors / 0 warnings. Multiplayer gameplay acceptance remains manual pending.

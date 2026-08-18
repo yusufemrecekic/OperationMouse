@@ -169,12 +169,18 @@ detaching and restoring collision/physics. A different client cannot invoke an
 RPC on that Character component and cannot pass the holder check.
 
 `OnRep_CurrentHolder` reconciles visual attachment to the holder's
-skeleton-independent CarryPoint on owning and simulated clients. Normal actor
-attachment/movement replication carries the transform; no multicast or
-per-frame transform RPC is used. The Carryable remains server-owned as a world
-actor; `CurrentHolder` is gameplay holder identity, not RPC ownership.
+skeleton-independent CarryPoint on owning and simulated clients. Drop and Reset
+also publish an `AuthoritativeWorldTransform` plus an incrementing
+`WorldStateRevision`; this makes repeated Reset-to-the-same-transform events
+observable and immediately clears stale client attachment presentation. Normal
+actor attachment and `ReplicatedMovement` carry the continuing server physics
+transform; no multicast or per-frame transform RPC is used. Clients do not
+independently decide gameplay physics state. The Carryable remains server-owned
+as a world actor; `CurrentHolder` is gameplay holder identity, not RPC ownership.
 
 Destroyed-object, holder EndPlay, normal Drop and Reset clear the relationship
-on the server and replicate Idle/available state. Final disconnect polish,
+on the server and replicate Idle/available state. Reset also clears linear and
+angular velocity before teleporting to the authority-owned home transform.
+Final disconnect polish,
 late-join evidence and latency acceptance remain pending manual/network tests.
 

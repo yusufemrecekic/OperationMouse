@@ -44,6 +44,11 @@ void AOMCarryableActor::BeginPlay()
 {
 	Super::BeginPlay();
 	HomeTransform = GetActorTransform();
+	if (HasAuthority())
+	{
+		AuthoritativeWorldTransform = HomeTransform;
+		WorldStateRevision = 1;
+	}
 	UpdateStatusText();
 }
 
@@ -120,8 +125,7 @@ bool AOMCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, const FVe
 	FTransform DropTransform = GetActorTransform();
 	DropTransform.SetLocation(DropLocation);
 	DropTransform.SetRotation(FQuat::Identity);
-	RestoreWorldState(DropTransform);
-	ForceNetUpdate();
+	PublishAuthoritativeWorldState(DropTransform);
 	return true;
 }
 
@@ -146,34 +150,13 @@ void AOMCarryableActor::ResetToHome()
 	}
 
 	CurrentHolder = nullptr;
-	RestoreWorldState(HomeTransform);
-	ForceNetUpdate();
+	PublishAuthoritativeWorldState(HomeTransform);
 	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Reset] Target=%s Authority=Server"), *GetName());
 }
 
 void AOMCarryableActor::OnRep_CurrentHolder(AOMMouseCharacter* PreviousHolder)
 {
-	if (IsValid(CurrentHolder))
-	{
-		UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>();
-		if (HolderCarryComponent && IsValid(HolderCarryComponent->GetCarryPoint()))
-		{
-			ApplyCarryPresentation(HolderCarryComponent->GetCarryPoint());
-		}
-		else
-		{
-			UE_LOG(
-				LogOperationMouse,
-				Warning,
-				TEXT("[Carry][Replicated] Target=%s Holder=%s Result=PendingPresentation Reason=MissingCarryPoint"),
-				*GetName(),
-				*GetNameSafe(CurrentHolder));
-		}
-	}
-	else
-	{
-		ApplyDroppedPresentation();
-	}
+	ReconcileReplicatedPresentation();
 
 	UE_LOG(
 		LogOperationMouse,
@@ -182,6 +165,19 @@ void AOMCarryableActor::OnRep_CurrentHolder(AOMMouseCharacter* PreviousHolder)
 		*GetName(),
 		*GetNameSafe(PreviousHolder),
 		*GetNameSafe(CurrentHolder));
+}
+
+void AOMCarryableActor::OnRep_WorldStateRevision()
+{
+	ReconcileReplicatedPresentation();
+	UE_LOG(
+		LogOperationMouse,
+		Log,
+		TEXT("[Carry][WorldStateReplicated] Target=%s Revision=%u Holder=%s Location=%s"),
+		*GetName(),
+		WorldStateRevision,
+		*GetNameSafe(CurrentHolder),
+		*AuthoritativeWorldTransform.GetLocation().ToCompactString());
 }
 
 void AOMCarryableActor::SaveWorldStateIfNeeded()
@@ -212,7 +208,7 @@ void AOMCarryableActor::ApplyCarryPresentation(USceneComponent* NewCarryPoint)
 	UpdateStatusText();
 }
 
-void AOMCarryableActor::ApplyDroppedPresentation()
+void AOMCarryableActor::ApplyReplicatedWorldPresentation()
 {
 	if (!Mesh)
 	{
@@ -220,16 +216,56 @@ void AOMCarryableActor::ApplyDroppedPresentation()
 	}
 
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	Mesh->SetSimulatePhysics(false);
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
-	Mesh->SetSimulatePhysics(bSavedSimulatePhysics);
+	SetActorTransform(AuthoritativeWorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	bHasSavedWorldState = false;
 	UpdateStatusText();
+}
+
+void AOMCarryableActor::ReconcileReplicatedPresentation()
+{
+	if (IsValid(CurrentHolder))
+	{
+		UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>();
+		if (HolderCarryComponent && IsValid(HolderCarryComponent->GetCarryPoint()))
+		{
+			ApplyCarryPresentation(HolderCarryComponent->GetCarryPoint());
+			return;
+		}
+
+		UE_LOG(
+			LogOperationMouse,
+			Warning,
+			TEXT("[Carry][Replicated] Target=%s Holder=%s Result=PendingPresentation Reason=MissingCarryPoint"),
+			*GetName(),
+			*GetNameSafe(CurrentHolder));
+		return;
+	}
+
+	ApplyReplicatedWorldPresentation();
+}
+
+void AOMCarryableActor::PublishAuthoritativeWorldState(const FTransform& TargetTransform)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	RestoreWorldState(TargetTransform);
+	AuthoritativeWorldTransform = GetActorTransform();
+	++WorldStateRevision;
+	ForceNetUpdate();
 }
 
 void AOMCarryableActor::RestoreWorldState(const FTransform& TargetTransform)
 {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	if (Mesh->IsSimulatingPhysics())
+	{
+		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	}
 	Mesh->SetSimulatePhysics(false);
 	SetActorTransform(TargetTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
@@ -256,4 +292,6 @@ void AOMCarryableActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOMCarryableActor, CurrentHolder);
+	DOREPLIFETIME(AOMCarryableActor, AuthoritativeWorldTransform);
+	DOREPLIFETIME(AOMCarryableActor, WorldStateRevision);
 }

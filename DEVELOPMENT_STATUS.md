@@ -8,9 +8,9 @@ Sprint 1 Gameplay Foundation / VS-Y01
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 2 Grab / Carry / Drop server-authority synchronization fix implemented; technical validation and manual two-player evidence are pending
+Current: Sprint 2 Drop/Reset world-state reconciliation and neutral daytime test-map follow-up technically validated; manual two-player evidence remains pending
 
-Next: Complete builds/automated validation, then Yusuf two-player Grab / Carry / Drop, contention and recovery retest; physical gamepad evidence remains pending
+Next: Yusuf two-player Drop/Reset convergence, contention and recovery retest; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -80,6 +80,7 @@ Next: Complete builds/automated validation, then Yusuf two-player Grab / Carry /
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds, Sprint 1 regression validation, Sprint 2 structural validation, and Sprint 2 Map Check (0 errors / 0 warnings) passed. Manual gameplay acceptance remains pending.
 - Initial Sprint 2 manual testing confirmed Standalone Grab / Carry / Drop works and identified two integration issues: the technical map was too dark and Character facing followed movement instead of mouse yaw. The focused follow-up uses controller-yaw Character rotation (`Use Controller Rotation Yaw=true`, `Orient Rotation to Movement=false`) and movable shadowless graybox lights with precomputed lighting disabled. Editor/Game builds, Sprint 1/2 validation, and Map Check (0 errors / 0 warnings) pass; final manual gameplay retest remains pending.
 - Two-player Sprint 2 testing exposed that Grab completed only on the server while `UOMCarryComponent::CarriedActor` and the Carryable holder were transient, leaving the owning Client locally Idle and unable to request Drop. The focused network fix replicates the server-owned Character/Carryable relationship, reconciles CarryPoint attachment through `OnRep`, routes owner Drop input through a Character-component Server RPC, and validates the actual holder. Multiplayer manual retest remains pending; final disconnect/late-join/latency evidence is not yet claimed.
+- The follow-up Client Drop/Reset desync fix replaces client-local physics restoration with a replicated authoritative Drop/Reset transform plus an incrementing world-state revision, while Unreal `ReplicatedMovement` continues server-authoritative dropped physics. Reset clears velocities and holder/carrier state before teleporting to the stored home transform. The Sprint 2 map now uses a neutral SkyAtmosphere/Directional/SkyLight setup, fixed manual exposure, a technical grid floor, no high-intensity fill-light stack, and route-aligned positive-scale labels. Editor/Game builds, Sprint 1/Sprint 2 validation and Map Check (0 errors / 0 warnings) passed; multiplayer manual acceptance remains pending.
 
 ## Repository
 

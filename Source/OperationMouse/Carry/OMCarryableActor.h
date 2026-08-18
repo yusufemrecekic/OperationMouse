@@ -48,9 +48,14 @@ private:
 	UFUNCTION()
 	void OnRep_CurrentHolder(AOMMouseCharacter* PreviousHolder);
 
+	UFUNCTION()
+	void OnRep_WorldStateRevision();
+
 	void ApplyCarryPresentation(USceneComponent* NewCarryPoint);
-	void ApplyDroppedPresentation();
+	void ApplyReplicatedWorldPresentation();
+	void ReconcileReplicatedPresentation();
 	void SaveWorldStateIfNeeded();
+	void PublishAuthoritativeWorldState(const FTransform& TargetTransform);
 	void RestoreWorldState(const FTransform& TargetTransform);
 	void UpdateStatusText();
 
@@ -63,6 +68,14 @@ private:
 	/** Server-owned holder relationship used for availability and client presentation. */
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentHolder, VisibleAnywhere, Category = "Operation Mouse|Carry")
 	TObjectPtr<AOMMouseCharacter> CurrentHolder;
+
+	/** Last discrete Drop/Reset transform. ReplicatedMovement continues authoritative physics after it. */
+	UPROPERTY(Replicated)
+	FTransform AuthoritativeWorldTransform;
+
+	/** Changes for every Drop/Reset, including repeated resets to the same transform. */
+	UPROPERTY(ReplicatedUsing = OnRep_WorldStateRevision)
+	uint32 WorldStateRevision = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry")
 	FOMInteractionInfo InteractionInfo;

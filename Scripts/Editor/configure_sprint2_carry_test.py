@@ -84,6 +84,9 @@ def configure_map():
     world.get_world_settings().set_editor_property("force_no_precomputed_lighting", True)
 
     cube = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
+    world_grid = unreal.EditorAssetLibrary.load_asset(
+        "/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"
+    )
 
     floor = spawn(
         actor_subsystem,
@@ -92,7 +95,10 @@ def configure_map():
         unreal.Vector(0.0, 0.0, -25.0),
         scale=unreal.Vector(28.0, 12.0, 0.5),
     )
-    floor.get_editor_property("static_mesh_component").set_editor_property("static_mesh", cube)
+    floor_component = floor.get_editor_property("static_mesh_component")
+    floor_component.set_editor_property("static_mesh", cube)
+    if world_grid is not None:
+        floor_component.set_material(0, world_grid)
 
     drop_pad = spawn(
         actor_subsystem,
@@ -119,7 +125,16 @@ def configure_map():
         unreal.Vector(0.0, 0.0, 500.0),
         unreal.Rotator(roll=0.0, pitch=-45.0, yaw=-35.0),
     )
-    make_light_movable(directional, 5.0)
+    directional_component = make_light_movable(directional, 3.0)
+    directional_component.set_editor_property("cast_shadows", True)
+    directional_component.set_editor_property("atmosphere_sun_light", True)
+
+    spawn(
+        actor_subsystem,
+        unreal.SkyAtmosphere,
+        "Sprint2_SkyAtmosphere",
+        unreal.Vector(0.0, 0.0, 0.0),
+    )
 
     sky = spawn(
         actor_subsystem,
@@ -131,18 +146,26 @@ def configure_map():
     if sky_component is None:
         raise RuntimeError("Sprint2_SkyLight has no SkyLightComponent")
     sky_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-    sky_component.set_editor_property("intensity", 1.5)
+    sky_component.set_editor_property("intensity", 0.8)
+    sky_component.set_editor_property("real_time_capture", True)
 
-    # Broad shadowless fill lights make the complete route and both sides of
-    # the prototype Character readable without becoming a final art setup.
-    for index, (x, y) in enumerate(((-500.0, -350.0), (300.0, 350.0), (1050.0, -250.0)), start=1):
-        fill = spawn(
-            actor_subsystem,
-            unreal.PointLight,
-            f"Sprint2_FillLight_{index}",
-            unreal.Vector(x, y, 450.0),
-        )
-        make_light_movable(fill, 9000.0, 1400.0)
+    post_process = spawn(
+        actor_subsystem,
+        unreal.PostProcessVolume,
+        "Sprint2_PostProcess",
+        unreal.Vector(0.0, 0.0, 0.0),
+    )
+    post_process.set_editor_property("unbound", True)
+    post_settings = post_process.get_editor_property("settings")
+    post_settings.set_editor_property("override_auto_exposure_method", True)
+    post_settings.set_editor_property(
+        "auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL
+    )
+    post_settings.set_editor_property("override_auto_exposure_bias", True)
+    post_settings.set_editor_property("auto_exposure_bias", 0.0)
+    post_settings.set_editor_property("override_bloom_intensity", True)
+    post_settings.set_editor_property("bloom_intensity", 0.0)
+    post_process.set_editor_property("settings", post_settings)
 
     readable_rotation = unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0)
     spawn(
@@ -170,9 +193,9 @@ def configure_map():
     reset.set_editor_property("test_role", unreal.OMTestInteractionRole.RESET)
 
     add_text(actor_subsystem, "Sprint2_Label_Start", "START", unreal.Vector(-950.0, 0.0, 180.0))
-    add_text(actor_subsystem, "Sprint2_Label_A", "CARRYABLE A", unreal.Vector(-400.0, 0.0, 190.0))
+    add_text(actor_subsystem, "Sprint2_Label_A", "CARRYABLE A", unreal.Vector(-400.0, -170.0, 190.0))
     add_text(actor_subsystem, "Sprint2_Label_Drop", "DROP AREA", unreal.Vector(250.0, 0.0, 190.0))
-    add_text(actor_subsystem, "Sprint2_Label_B", "CARRYABLE B", unreal.Vector(650.0, 0.0, 190.0))
+    add_text(actor_subsystem, "Sprint2_Label_B", "CARRYABLE B", unreal.Vector(650.0, 170.0, 190.0))
     add_text(actor_subsystem, "Sprint2_Label_Reset", "RESET / RECOVERY", unreal.Vector(1150.0, 0.0, 190.0))
 
     if not level_subsystem.save_current_level():
