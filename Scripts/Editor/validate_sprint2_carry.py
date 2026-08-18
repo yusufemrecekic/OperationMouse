@@ -188,6 +188,9 @@ def validate():
     floor_material = floor_component.get_material(0) if floor_component else None
     if floor_material is None or not floor_material.get_path_name().startswith(FLOOR_MATERIAL_PATH):
         fail("Medium-gray floor material is not assigned")
+    floor_scale = floor.get_actor_scale3d() if floor else unreal.Vector()
+    if floor_scale.x < 200.0 or floor_scale.y < 200.0:
+        fail("Sprint 2 floor does not cover the technical-test route and camera background")
 
     route_x = sorted(actor.get_actor_location().x for actor in carryables + reset_actors)
     if route_x[1] - route_x[0] < 500.0 or route_x[2] - route_x[1] < 400.0:

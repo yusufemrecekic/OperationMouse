@@ -133,7 +133,7 @@ def configure_map():
         unreal.StaticMeshActor,
         "Sprint2_Floor",
         unreal.Vector(0.0, 0.0, -25.0),
-        scale=unreal.Vector(28.0, 12.0, 0.5),
+        scale=unreal.Vector(200.0, 200.0, 0.5),
     )
     floor_component = floor.get_editor_property("static_mesh_component")
     floor_component.set_editor_property("static_mesh", cube)
