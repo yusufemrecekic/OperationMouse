@@ -9,6 +9,41 @@ PROTOTYPE_GAME_MODE_PATH = (
     "/Game/OperationMouse/Characters/Prototype/Blueprints/"
     "BP_OMGameMode_Prototype.BP_OMGameMode_Prototype_C"
 )
+MATERIAL_FOLDER = "/Game/OperationMouse/Tests/Materials"
+FLOOR_MATERIAL_PATH = f"{MATERIAL_FOLDER}/MI_Sprint2_FloorGray"
+CARRYABLE_MATERIAL_PATH = f"{MATERIAL_FOLDER}/MI_Sprint2_CarryableGray"
+
+
+def get_or_create_color_material(asset_path, color):
+    material = (
+        unreal.EditorAssetLibrary.load_asset(asset_path)
+        if unreal.EditorAssetLibrary.does_asset_exist(asset_path)
+        else None
+    )
+    if material is None:
+        parent = unreal.EditorAssetLibrary.load_asset(
+            "/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"
+        )
+        if parent is None:
+            raise RuntimeError("BasicShapeMaterial could not be loaded")
+        asset_name = asset_path.rsplit("/", 1)[-1]
+        factory = unreal.MaterialInstanceConstantFactoryNew()
+        material = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            asset_name,
+            MATERIAL_FOLDER,
+            unreal.MaterialInstanceConstant,
+            factory,
+        )
+        if material is None:
+            raise RuntimeError(f"Could not create {asset_path}")
+        unreal.MaterialEditingLibrary.set_material_instance_parent(material, parent)
+    unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
+        material,
+        "Color",
+        color,
+    )
+    unreal.EditorAssetLibrary.save_loaded_asset(material)
+    return material
 
 
 def spawn(actor_subsystem, actor_class, label, location, rotation=None, scale=None):
@@ -84,8 +119,13 @@ def configure_map():
     world.get_world_settings().set_editor_property("force_no_precomputed_lighting", True)
 
     cube = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
-    world_grid = unreal.EditorAssetLibrary.load_asset(
-        "/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"
+    floor_material = get_or_create_color_material(
+        FLOOR_MATERIAL_PATH,
+        unreal.LinearColor(0.32, 0.34, 0.37, 1.0),
+    )
+    carryable_material = get_or_create_color_material(
+        CARRYABLE_MATERIAL_PATH,
+        unreal.LinearColor(0.10, 0.12, 0.15, 1.0),
     )
 
     floor = spawn(
@@ -97,8 +137,7 @@ def configure_map():
     )
     floor_component = floor.get_editor_property("static_mesh_component")
     floor_component.set_editor_property("static_mesh", cube)
-    if world_grid is not None:
-        floor_component.set_material(0, world_grid)
+    floor_component.set_material(0, floor_material)
 
     drop_pad = spawn(
         actor_subsystem,
@@ -107,7 +146,9 @@ def configure_map():
         unreal.Vector(250.0, 0.0, 2.5),
         scale=unreal.Vector(2.0, 3.0, 0.05),
     )
-    drop_pad.get_editor_property("static_mesh_component").set_editor_property("static_mesh", cube)
+    drop_component = drop_pad.get_editor_property("static_mesh_component")
+    drop_component.set_editor_property("static_mesh", cube)
+    drop_component.set_material(0, carryable_material)
 
     for index, y in enumerate((-180.0, 180.0), start=1):
         spawn(
@@ -125,7 +166,7 @@ def configure_map():
         unreal.Vector(0.0, 0.0, 500.0),
         unreal.Rotator(roll=0.0, pitch=-45.0, yaw=-35.0),
     )
-    directional_component = make_light_movable(directional, 3.0)
+    directional_component = make_light_movable(directional, 100.0)
     directional_component.set_editor_property("cast_shadows", True)
     directional_component.set_editor_property("atmosphere_sun_light", True)
 
@@ -146,7 +187,7 @@ def configure_map():
     if sky_component is None:
         raise RuntimeError("Sprint2_SkyLight has no SkyLightComponent")
     sky_component.set_mobility(unreal.ComponentMobility.MOVABLE)
-    sky_component.set_editor_property("intensity", 0.8)
+    sky_component.set_editor_property("intensity", 1.0)
     sky_component.set_editor_property("real_time_capture", True)
 
     post_process = spawn(
@@ -159,8 +200,12 @@ def configure_map():
     post_settings = post_process.get_editor_property("settings")
     post_settings.set_editor_property("override_auto_exposure_method", True)
     post_settings.set_editor_property(
-        "auto_exposure_method", unreal.AutoExposureMethod.AEM_MANUAL
+        "auto_exposure_method", unreal.AutoExposureMethod.AEM_HISTOGRAM
     )
+    post_settings.set_editor_property("override_auto_exposure_min_brightness", True)
+    post_settings.set_editor_property("auto_exposure_min_brightness", 15.0)
+    post_settings.set_editor_property("override_auto_exposure_max_brightness", True)
+    post_settings.set_editor_property("auto_exposure_max_brightness", 15.0)
     post_settings.set_editor_property("override_auto_exposure_bias", True)
     post_settings.set_editor_property("auto_exposure_bias", 0.0)
     post_settings.set_editor_property("override_bloom_intensity", True)
@@ -168,19 +213,25 @@ def configure_map():
     post_process.set_editor_property("settings", post_settings)
 
     readable_rotation = unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0)
-    spawn(
+    carryable_a = spawn(
         actor_subsystem,
         carryable_class,
         "Sprint2_Carryable_A",
         unreal.Vector(-400.0, -170.0, 80.0),
         readable_rotation,
     )
-    spawn(
+    carryable_a.get_component_by_class(unreal.StaticMeshComponent).set_material(
+        0, carryable_material
+    )
+    carryable_b = spawn(
         actor_subsystem,
         carryable_class,
         "Sprint2_Carryable_B",
         unreal.Vector(650.0, 170.0, 80.0),
         readable_rotation,
+    )
+    carryable_b.get_component_by_class(unreal.StaticMeshComponent).set_material(
+        0, carryable_material
     )
 
     reset = spawn(

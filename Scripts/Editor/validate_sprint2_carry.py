@@ -15,6 +15,8 @@ PROTOTYPE_GAME_MODE_PATH = (
     "/Game/OperationMouse/Characters/Prototype/Blueprints/"
     "BP_OMGameMode_Prototype.BP_OMGameMode_Prototype_C"
 )
+FLOOR_MATERIAL_PATH = "/Game/OperationMouse/Tests/Materials/MI_Sprint2_FloorGray"
+CARRYABLE_MATERIAL_PATH = "/Game/OperationMouse/Tests/Materials/MI_Sprint2_CarryableGray"
 
 
 def fail(message):
@@ -109,6 +111,15 @@ def validate():
         fail(f"Expected 2 carryables, found {len(carryables)}")
     if len({actor.get_actor_label() for actor in carryables}) != 2:
         fail("Carryable labels are not unique")
+    if not unreal.EditorAssetLibrary.does_asset_exist(FLOOR_MATERIAL_PATH):
+        fail("Sprint 2 medium-gray floor material is missing")
+    if not unreal.EditorAssetLibrary.does_asset_exist(CARRYABLE_MATERIAL_PATH):
+        fail("Sprint 2 dark-gray Carryable material is missing")
+    for actor in carryables:
+        component = actor.get_component_by_class(unreal.StaticMeshComponent)
+        material = component.get_material(0) if component else None
+        if material is None or not material.get_path_name().startswith(CARRYABLE_MATERIAL_PATH):
+            fail(f"Dark-gray Carryable material missing on {actor.get_actor_label()}")
     carryable_cdo = unreal.get_default_object(carryable_class)
     if not carryable_cdo.get_editor_property("replicates"):
         fail("AOMCarryableActor replication is disabled")
@@ -151,11 +162,32 @@ def validate():
     missing_daylight = sorted(required_daylight - actor_labels)
     if missing_daylight:
         fail(f"Missing neutral daylight actors: {missing_daylight}")
+    directional = next(
+        actor for actor in actors if actor.get_actor_label() == "Sprint2_DirectionalLight"
+    )
+    directional_component = directional.get_component_by_class(unreal.DirectionalLightComponent)
+    if directional_component is None or directional_component.get_editor_property("intensity") < 50.0:
+        fail("Directional Light is not configured for a real daylight exposure")
     post_process = next(
         actor for actor in actors if actor.get_actor_label() == "Sprint2_PostProcess"
     )
     if not post_process.get_editor_property("unbound"):
         fail("Sprint 2 technical exposure is not fixed globally")
+    post_settings = post_process.get_editor_property("settings")
+    if post_settings.get_editor_property("auto_exposure_method") != unreal.AutoExposureMethod.AEM_HISTOGRAM:
+        fail("Sprint 2 exposure method is not the fixed daylight histogram setup")
+    if abs(post_settings.get_editor_property("auto_exposure_min_brightness") - 15.0) > 0.01:
+        fail("Sprint 2 minimum exposure is not fixed to EV100 15")
+    if abs(post_settings.get_editor_property("auto_exposure_max_brightness") - 15.0) > 0.01:
+        fail("Sprint 2 maximum exposure is not fixed to EV100 15")
+    if post_settings.get_editor_property("bloom_intensity") > 0.01:
+        fail("Sprint 2 technical map bloom is not disabled")
+
+    floor = next((actor for actor in actors if actor.get_actor_label() == "Sprint2_Floor"), None)
+    floor_component = floor.get_component_by_class(unreal.StaticMeshComponent) if floor else None
+    floor_material = floor_component.get_material(0) if floor_component else None
+    if floor_material is None or not floor_material.get_path_name().startswith(FLOOR_MATERIAL_PATH):
+        fail("Medium-gray floor material is not assigned")
 
     route_x = sorted(actor.get_actor_location().x for actor in carryables + reset_actors)
     if route_x[1] - route_x[0] < 500.0 or route_x[2] - route_x[1] < 400.0:
