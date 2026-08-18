@@ -78,6 +78,7 @@ Next: Yusuf manual Standalone Grab / Carry / Drop test; after gameplay acceptanc
 - Carry uses deterministic attachment with collision/physics suspension, clean Drop restoration, re-grab support, destroyed/invalid target cleanup, EndPlay cleanup, and targeted Reset-to-home recovery.
 - Dedicated `L_Sprint2_CarryTest` contains two separated carryables, a Drop area, two PlayerStarts, a Reset/recovery fixture, readable route labels, and the prototype GameMode without modifying the accepted Sprint 1 map.
 - `OperationMouseEditor` and `OperationMouse` Win64 Development builds, Sprint 1 regression validation, Sprint 2 structural validation, and Sprint 2 Map Check (0 errors / 0 warnings) passed. Manual gameplay acceptance remains pending.
+- Initial Sprint 2 manual testing confirmed Standalone Grab / Carry / Drop works and identified two integration issues: the technical map was too dark and Character facing followed movement instead of mouse yaw. The focused follow-up uses controller-yaw Character rotation (`Use Controller Rotation Yaw=true`, `Orient Rotation to Movement=false`) and movable shadowless graybox lights with precomputed lighting disabled. Editor/Game builds, Sprint 1/2 validation, and Map Check (0 errors / 0 warnings) pass; final manual gameplay retest remains pending.
 
 ## Repository
 

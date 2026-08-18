@@ -41,6 +41,18 @@ def add_text(actor_subsystem, label, text, location):
     return actor
 
 
+def make_light_movable(light_actor, intensity, attenuation_radius=None):
+    component = light_actor.get_component_by_class(unreal.LightComponent)
+    if component is None:
+        raise RuntimeError(f"{light_actor.get_actor_label()} has no LightComponent")
+    component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    component.set_editor_property("intensity", intensity)
+    component.set_editor_property("cast_shadows", False)
+    if attenuation_radius is not None:
+        component.set_editor_property("attenuation_radius", attenuation_radius)
+    return component
+
+
 def configure_map():
     level_subsystem = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
     actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -67,6 +79,9 @@ def configure_map():
     world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     world.get_world_settings().set_editor_property("default_game_mode", prototype_game_mode)
     world.get_world_settings().set_editor_property("kill_z", -1000.0)
+    # This is a debug/graybox map. All lights are movable, so it must not depend
+    # on a baked-lighting pass or display "LIGHTING NEEDS TO BE REBUILT".
+    world.get_world_settings().set_editor_property("force_no_precomputed_lighting", True)
 
     cube = unreal.EditorAssetLibrary.load_asset("/Engine/BasicShapes/Cube.Cube")
 
@@ -97,19 +112,37 @@ def configure_map():
             unreal.Rotator(roll=0.0, pitch=0.0, yaw=0.0),
         )
 
-    spawn(
+    directional = spawn(
         actor_subsystem,
         unreal.DirectionalLight,
         "Sprint2_DirectionalLight",
         unreal.Vector(0.0, 0.0, 500.0),
         unreal.Rotator(roll=0.0, pitch=-45.0, yaw=-35.0),
     )
-    spawn(
+    make_light_movable(directional, 5.0)
+
+    sky = spawn(
         actor_subsystem,
         unreal.SkyLight,
         "Sprint2_SkyLight",
         unreal.Vector(0.0, 0.0, 300.0),
     )
+    sky_component = sky.get_component_by_class(unreal.SkyLightComponent)
+    if sky_component is None:
+        raise RuntimeError("Sprint2_SkyLight has no SkyLightComponent")
+    sky_component.set_mobility(unreal.ComponentMobility.MOVABLE)
+    sky_component.set_editor_property("intensity", 1.5)
+
+    # Broad shadowless fill lights make the complete route and both sides of
+    # the prototype Character readable without becoming a final art setup.
+    for index, (x, y) in enumerate(((-500.0, -350.0), (300.0, 350.0), (1050.0, -250.0)), start=1):
+        fill = spawn(
+            actor_subsystem,
+            unreal.PointLight,
+            f"Sprint2_FillLight_{index}",
+            unreal.Vector(x, y, 450.0),
+        )
+        make_light_movable(fill, 9000.0, 1400.0)
 
     readable_rotation = unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0)
     spawn(

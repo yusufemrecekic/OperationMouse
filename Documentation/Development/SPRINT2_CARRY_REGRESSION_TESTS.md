@@ -36,6 +36,10 @@ claimed by this document.
    and remain usable.
 8. Run the accepted Sprint 1 Button, Door and prompt checks in
    `L_Phase5_InteractionTest`.
+9. Move the mouse left/right and confirm the Character yaw stays aligned with
+   the camera while mouse pitch changes only the camera.
+10. Confirm the route, Character, Carryables and labels remain clearly readable
+    without a lighting-rebuild warning.
 
 ## Acceptance boundary
 

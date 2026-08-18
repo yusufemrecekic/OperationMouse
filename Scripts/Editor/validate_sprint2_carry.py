@@ -43,6 +43,11 @@ def validate():
         fail("AOMMouseCharacter does not create CarryPoint")
     if character_cdo.get_editor_property("interaction_component") is None:
         fail("Sprint 1 InteractionComponent regression")
+    if not character_cdo.get_editor_property("use_controller_rotation_yaw"):
+        fail("AOMMouseCharacter is not aligned to controller yaw")
+    movement_component = character_cdo.get_editor_property("character_movement")
+    if movement_component.get_editor_property("orient_rotation_to_movement"):
+        fail("CharacterMovement still overrides controller-yaw facing")
 
     actors = list(actor_subsystem.get_all_level_actors())
     carryables = [actor for actor in actors if actor.get_class() == carryable_class]
@@ -72,6 +77,18 @@ def validate():
         fail(f"Wrong GameMode: {active_game_mode}")
     if unreal.get_default_object(prototype_game_mode).get_editor_property("default_pawn_class") != prototype_character:
         fail("Prototype GameMode does not spawn BP_OMMouseCharacter_Prototype")
+    if not world.get_world_settings().get_editor_property("force_no_precomputed_lighting"):
+        fail("Sprint 2 map still depends on precomputed lighting")
+
+    fill_lights = [
+        actor for actor in actors if actor.get_actor_label().startswith("Sprint2_FillLight_")
+    ]
+    if len(fill_lights) != 3:
+        fail(f"Expected 3 technical fill lights, found {len(fill_lights)}")
+    for actor in fill_lights:
+        component = actor.get_component_by_class(unreal.PointLightComponent)
+        if component is None or component.get_editor_property("mobility") != unreal.ComponentMobility.MOVABLE:
+            fail(f"{actor.get_actor_label()} is not a movable PointLight")
 
     route_x = sorted(actor.get_actor_location().x for actor in carryables + reset_actors)
     if route_x[1] - route_x[0] < 500.0 or route_x[2] - route_x[1] < 400.0:
@@ -87,7 +104,8 @@ def validate():
     unreal.log(
         "OM_SPRINT2_VALIDATION|PASS|"
         f"carryables={len(carryables)}|starts={len(starts)}|reset={len(reset_actors)}|"
-        "carry_component=present|interaction_regression=present|prototype_game_mode=present"
+        "carry_component=present|interaction_regression=present|prototype_game_mode=present|"
+        "controller_yaw=present|movable_debug_lighting=present"
     )
     unreal.log("OM_SPRINT2_VALIDATION|FINAL|PASS")
 

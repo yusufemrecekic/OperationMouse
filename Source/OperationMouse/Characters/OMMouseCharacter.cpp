@@ -26,10 +26,10 @@ AOMMouseCharacter::AOMMouseCharacter()
 	bReplicates = true;
 	SetReplicateMovement(true);
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.0, 500.0, 0.0);
 	GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 	GetCharacterMovement()->AirControl = AirControlStrength;
