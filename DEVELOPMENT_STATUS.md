@@ -8,9 +8,9 @@ Sprint 1 Gameplay Foundation / VS-Y01
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 2 Drop/Reset world-state reconciliation and neutral daytime test-map follow-up technically validated; manual two-player evidence remains pending
+Current: Sprint 2 core two-player Grab / Carry / Drop, Drop/Reset synchronization and readability manually passed; controlled v5.1 closeout gate remains PARTIAL pending network edge-case evidence
 
-Next: Yusuf two-player Drop/Reset convergence, contention and recovery retest; physical gamepad evidence remains pending
+Next: Hilmi contention, invalid-request logs, disconnect/critical-loot recovery, 3/4-player and physical two-PC evidence; emulated latency/loss before full network approval; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -81,6 +81,8 @@ Next: Yusuf two-player Drop/Reset convergence, contention and recovery retest; p
 - Initial Sprint 2 manual testing confirmed Standalone Grab / Carry / Drop works and identified two integration issues: the technical map was too dark and Character facing followed movement instead of mouse yaw. The focused follow-up uses controller-yaw Character rotation (`Use Controller Rotation Yaw=true`, `Orient Rotation to Movement=false`) and movable shadowless graybox lights with precomputed lighting disabled. Editor/Game builds, Sprint 1/2 validation, and Map Check (0 errors / 0 warnings) pass; final manual gameplay retest remains pending.
 - Two-player Sprint 2 testing exposed that Grab completed only on the server while `UOMCarryComponent::CarriedActor` and the Carryable holder were transient, leaving the owning Client locally Idle and unable to request Drop. The focused network fix replicates the server-owned Character/Carryable relationship, reconciles CarryPoint attachment through `OnRep`, routes owner Drop input through a Character-component Server RPC, and validates the actual holder. Multiplayer manual retest remains pending; final disconnect/late-join/latency evidence is not yet claimed.
 - The follow-up Client Drop/Reset desync fix replaces client-local physics restoration with a replicated authoritative Drop/Reset transform plus an incrementing world-state revision, while Unreal `ReplicatedMovement` continues server-authoritative dropped physics. Reset clears velocities and holder/carrier state before teleporting to the stored home transform. The Sprint 2 map now uses a neutral SkyAtmosphere/Directional/SkyLight setup, fixed manual exposure, a technical grid floor, no high-intensity fill-light stack, and route-aligned positive-scale labels. Editor/Game builds, Sprint 1/Sprint 2 validation and Map Check (0 errors / 0 warnings) passed; multiplayer manual acceptance remains pending.
+- Final Sprint 2 core Host + Client manual retest PASSED: Client Grab, Client Drop synchronization, Server Grab/Drop, Reset synchronization, Carry movement synchronization, lighting/readability and text readability were verified.
+- PR #12 merged into `main` at `6c6e1a7`. The controlled Production Control/Tracker v5.1 closeout audit classifies Sprint 2 as PARTIAL: normal two-player Carry is proven, while simultaneous contention, invalid-request logs, disconnect/critical-loot recovery, 3/4-player regression, physical two-PC topology and latency/loss network approval evidence remain open.
 
 ## Repository
 
@@ -101,7 +103,7 @@ Repository setup: Complete
 - Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
-- Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Multiplayer acceptance, final disconnect/late-join behavior and latency evidence remain pending.
+- Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Core Host/Client synchronization passed; contention, disconnect/recovery, 3/4-player, physical two-PC and latency/loss evidence remain pending. Active-mission late join Carry state is deferred because controlled v5.1 currently rejects mission-time new joins; same-mission reconnect is V1 OUT.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -125,15 +127,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
+Developer: Yusuf Emre (Gameplay complete for the tested core loop) / Hilmi Tunahan evidence and network approval pending
 
-System: Sprint 2 Step 1 Grab / Carry / Drop Gameplay Foundation
+System: Sprint 2 Grab / Carry / Drop Closeout Audit
 
-Branch: feature/sprint2-grab-carry-foundation
+Branch: main (PR #12 merged); documentation closeout branch only
 
 Main files/assets: `UOMCarryComponent`, `AOMCarryableActor`, and `L_Sprint2_CarryTest`
 
-Status: SPRINT 2 NETWORK CARRY FIX - MULTIPLAYER MANUAL TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: SPRINT 2 CORE HOST/CLIENT TEST PASSED - PRODUCTION GATE PARTIAL - NETWORK EDGE-CASE EVIDENCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
