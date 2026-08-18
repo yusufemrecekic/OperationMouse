@@ -145,3 +145,42 @@ prompt does not reserve a target.
 - Hold cancellation passes with temporary latency enabled.
 - Logs identify requester, target, accepted/rejected result, and rejection reason.
 
+## Sprint 2 Carry authority contract
+
+Sprint 2 Carry has one server-owned relationship represented on both sides of
+the invariant:
+
+- Character `UOMCarryComponent::CarriedActor` replicates to owner and simulated
+  clients;
+- `AOMCarryableActor::CurrentHolder` replicates to all relevant clients;
+- on the server, either both references describe the same relationship or both
+  are empty.
+
+Grab uses the existing owning-Character interaction RPC. The server repeats
+range, line-of-sight, Character-state and interactable availability validation,
+then `CompleteInteraction` calls `TryGrab` on the server. The first server
+request that sets `CurrentHolder` wins; later requests see the object as
+unavailable.
+
+The owning client receives `CarriedActor`, so the same Interact input routes to
+`ServerRequestDrop` on its replicated Character component. The server verifies
+that the requesting Character is the Carryable's actual `CurrentHolder` before
+detaching and restoring collision/physics. A different client cannot invoke an
+RPC on that Character component and cannot pass the holder check.
+
+`OnRep_CurrentHolder` reconciles visual attachment to the holder's
+skeleton-independent CarryPoint on owning and simulated clients. Drop and Reset
+also publish an `AuthoritativeWorldTransform` plus an incrementing
+`WorldStateRevision`; this makes repeated Reset-to-the-same-transform events
+observable and immediately clears stale client attachment presentation. Normal
+actor attachment and `ReplicatedMovement` carry the continuing server physics
+transform; no multicast or per-frame transform RPC is used. Clients do not
+independently decide gameplay physics state. The Carryable remains server-owned
+as a world actor; `CurrentHolder` is gameplay holder identity, not RPC ownership.
+
+Destroyed-object, holder EndPlay, normal Drop and Reset clear the relationship
+on the server and replicate Idle/available state. Reset also clears linear and
+angular velocity before teleporting to the authority-owned home transform.
+Final disconnect polish,
+late-join evidence and latency acceptance remain pending manual/network tests.
+

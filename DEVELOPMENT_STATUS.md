@@ -8,9 +8,9 @@ Sprint 1 Gameplay Foundation / VS-Y01
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 1 PC movement + interaction foundation PASSED and merged through PR #6; closeout audit complete; physical gamepad and Hilmi network evidence remain pending
+Current: Sprint 2 Drop/Reset world-state reconciliation and neutral daytime test-map follow-up technically validated; manual two-player evidence remains pending
 
-Next: Obtain physical gamepad evidence and Hilmi's interaction contract/network review; Sprint 2 Grab/Carry/Drop remains NOT STARTED
+Next: Yusuf two-player Drop/Reset convergence, contention and recovery retest; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -74,6 +74,13 @@ Next: Obtain physical gamepad evidence and Hilmi's interaction contract/network 
 - ONB-018 DONE / PASSED: `codex/onb018-revert-exercise` added one temporary Markdown file (`b515864`), merged it through PR #8, removed it with real `git revert` commit `6107caa`, and merged the revert through PR #9; final tree equality and clean status were verified with no gameplay/content/stash impact.
 - Sprint 2 donor audit compared `main` with `feature/interaction-foundation` and inspected the preserved stash through Git metadata only. Current `main` supersedes all old interaction source; the stash contains only a distinct obsolete test-map binary and is not a Sprint 2 code donor.
 - Sixteen repeatable Sprint 1 Given/When/Then regression cases, a two-minute VS-Y01 loop, evidence status, and a searchable debug/log reproduction standard were documented.
+- Sprint 2 Step 1 adds reusable `UOMCarryComponent` Idle/Carrying gameplay state, a dedicated skeleton-independent CarryPoint, and `AOMCarryableActor` integration through the existing interaction interface.
+- Carry uses deterministic attachment with collision/physics suspension, clean Drop restoration, re-grab support, destroyed/invalid target cleanup, EndPlay cleanup, and targeted Reset-to-home recovery.
+- Dedicated `L_Sprint2_CarryTest` contains two separated carryables, a Drop area, two PlayerStarts, a Reset/recovery fixture, readable route labels, and the prototype GameMode without modifying the accepted Sprint 1 map.
+- `OperationMouseEditor` and `OperationMouse` Win64 Development builds, Sprint 1 regression validation, Sprint 2 structural validation, and Sprint 2 Map Check (0 errors / 0 warnings) passed. Manual gameplay acceptance remains pending.
+- Initial Sprint 2 manual testing confirmed Standalone Grab / Carry / Drop works and identified two integration issues: the technical map was too dark and Character facing followed movement instead of mouse yaw. The focused follow-up uses controller-yaw Character rotation (`Use Controller Rotation Yaw=true`, `Orient Rotation to Movement=false`) and movable shadowless graybox lights with precomputed lighting disabled. Editor/Game builds, Sprint 1/2 validation, and Map Check (0 errors / 0 warnings) pass; final manual gameplay retest remains pending.
+- Two-player Sprint 2 testing exposed that Grab completed only on the server while `UOMCarryComponent::CarriedActor` and the Carryable holder were transient, leaving the owning Client locally Idle and unable to request Drop. The focused network fix replicates the server-owned Character/Carryable relationship, reconciles CarryPoint attachment through `OnRep`, routes owner Drop input through a Character-component Server RPC, and validates the actual holder. Multiplayer manual retest remains pending; final disconnect/late-join/latency evidence is not yet claimed.
+- The follow-up Client Drop/Reset desync fix replaces client-local physics restoration with a replicated authoritative Drop/Reset transform plus an incrementing world-state revision, while Unreal `ReplicatedMovement` continues server-authoritative dropped physics. Reset clears velocities and holder/carrier state before teleporting to the stored home transform. The Sprint 2 map now uses a neutral SkyAtmosphere/Directional/SkyLight setup, fixed manual exposure, a technical grid floor, no high-intensity fill-light stack, and route-aligned positive-scale labels. Editor/Game builds, Sprint 1/Sprint 2 validation and Map Check (0 errors / 0 warnings) passed; multiplayer manual acceptance remains pending.
 
 ## Repository
 
@@ -94,6 +101,7 @@ Repository setup: Complete
 - Gamepad hardware feel and Right Stick direction still require the first manual device pass; asset structure and modifiers pass automated validation.
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
+- Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Multiplayer acceptance, final disconnect/late-join behavior and latency evidence remain pending.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -119,13 +127,13 @@ Repository setup: Complete
 
 Developer: Yusuf Emre (Gameplay) / Hilmi Tunahan review pending (Network)
 
-System: Sprint 2 Phase 5 Donor Mapping (Read-only)
+System: Sprint 2 Step 1 Grab / Carry / Drop Gameplay Foundation
 
-Branch: codex/sprint2-donor-map
+Branch: feature/sprint2-grab-carry-foundation
 
-Main files/assets: `SPRINT2_PHASE5_DONOR_MAP.md` and `DEVELOPMENT_STATUS.md`
+Main files/assets: `UOMCarryComponent`, `AOMCarryableActor`, and `L_Sprint2_CarryTest`
 
-Status: SPRINT 1 PC VS-Y01 + ONB-018 PASSED - GAMEPAD MANUAL TEST PENDING - HILMI NETWORK REVIEW PENDING - SPRINT 2 NOT STARTED - OLD PHASE 5 STASH PRESERVED
+Status: SPRINT 2 NETWORK CARRY FIX - MULTIPLAYER MANUAL TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

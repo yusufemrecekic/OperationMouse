@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "EngineUtils.h"
+#include "../Carry/OMCarryableActor.h"
 #include "Net/UnrealNetwork.h"
 #include "../OperationMouse.h"
 #include "UObject/ConstructorHelpers.h"
@@ -127,6 +128,10 @@ void AOMTestInteractableActor::CompleteInteraction_Implementation(AActor* Intera
 		for (TActorIterator<AOMTestInteractableActor> It(GetWorld()); It; ++It)
 		{
 			It->ResetTestState();
+		}
+		for (TActorIterator<AOMCarryableActor> It(GetWorld()); It; ++It)
+		{
+			It->ResetToHome();
 		}
 		UE_LOG(LogOperationMouse, Log, TEXT("[Interaction][Reset] Interactor=%s Target=%s"), *GetNameSafe(Interactor), *GetName());
 		return;
