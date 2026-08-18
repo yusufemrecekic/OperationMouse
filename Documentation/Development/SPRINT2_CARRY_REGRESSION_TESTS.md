@@ -1,28 +1,28 @@
 # Sprint 2 Grab / Carry / Drop Regression Tests
 
-Run manual cases in `L_Sprint2_CarryTest`. Server-authoritative Carry state and
-Drop requests are implemented, but multiplayer acceptance is not claimed until
-the pending Host + Client retest passes.
+Run manual cases in `L_Sprint2_CarryTest`. The final core Host + Client Carry
+retest passed. Sprint 2 remains partial until the controlled production
+contention, disconnect/recovery and remaining network evidence is recorded.
 
 | ID | Test | Current evidence |
 | --- | --- | --- |
-| C01 | Launch Sprint 2 map | Automated map load **PASSED**; manual pending |
-| C02 | Prototype Character spawns | Automated GameMode/pawn chain **PASSED**; manual pending |
-| C03 | Carryable receives local focus/prompt | **MANUAL PENDING** |
-| C04 | Interact grabs available Carryable A | **MANUAL PENDING** |
-| C05 | Carry state becomes active and object remains visible | **MANUAL PENDING** |
-| C06 | Player moves and rotates camera while carrying | **MANUAL PENDING** |
-| C07 | Interact again drops cleanly | **MANUAL PENDING** |
+| C01 | Launch Sprint 2 map | Automated map load and final manual route **PASSED** |
+| C02 | Prototype Character spawns | Automated GameMode/pawn chain and final manual route **PASSED** |
+| C03 | Carryable receives local focus/prompt | Carry interaction works; exact prompt evidence remains **PARTIAL** |
+| C04 | Interact grabs available Carryable A | Client and Server Grab **PASSED** |
+| C05 | Carry state becomes active and object remains visible | Host/Client Carry state visibility **PASSED** |
+| C06 | Player moves and rotates camera while carrying | Carry movement synchronization **PASSED** |
+| C07 | Interact again drops cleanly | Client and Server Drop synchronization **PASSED** |
 | C08 | Dropped object can be grabbed again | **MANUAL PENDING** |
 | C09 | A second object is rejected while already carrying | Code eligibility check present; **MANUAL PENDING** |
 | C10 | Null, invalid and non-carryable targets reject safely | Code eligibility check present; **MANUAL PENDING** |
 | C11 | Destroyed carried object clears Carry state | Destroy callback present; **MANUAL PENDING** |
 | C12 | Sprint 1 Button still completes | **MANUAL REGRESSION PENDING** |
 | C13 | Sprint 1 Door still opens | **MANUAL REGRESSION PENDING** |
-| C14 | Existing interaction prompt/focus remains usable | Interaction component/interface structure **PASSED**; **MANUAL PENDING** |
+| C14 | Existing interaction prompt/focus remains usable | Interaction component/interface structure **PASSED**; focused Carry prompt evidence remains **PARTIAL** |
 | C15 | Accepted Sprint 1 map still loads | Automated Sprint 1 validation **PASSED** |
 
-## Multiplayer Carry retest (pending)
+## Multiplayer Carry retest
 
 1. Client grabs Carryable A: Client, Server and other Client windows show the
    same holder and CarryPoint attachment.
@@ -38,6 +38,16 @@ the pending Host + Client retest passes.
    world-state revision and converges to the same home location and rotation.
 7. Destroy/end the holder during Carry: the authoritative relationship clears
    without a duplicate or stale carried object.
+
+Recorded final evidence:
+
+- Steps 1-3: **PASSED** (Client and Server Grab/Drop synchronization).
+- Carry movement synchronization: **PASSED**.
+- Reset synchronization: **PASSED** for the exercised reset route.
+- Lighting and TextRender readability: **PASSED**.
+- Step 4 contention: **PENDING**.
+- Step 7 holder destruction/disconnect: **PENDING**.
+- Three/four-player and physical two-PC topology evidence: **PENDING**.
 
 ## Manual Standalone route
 
@@ -60,15 +70,20 @@ the pending Host + Client retest passes.
 
 ## Acceptance boundary
 
-- `MANUAL GAMEPLAY TEST: PENDING`
-- `MULTIPLAYER MANUAL TEST: PENDING`
+- `CORE MANUAL GAMEPLAY TEST: PASSED`
+- `CORE HOST + CLIENT CARRY SYNC TEST: PASSED`
+- `SPRINT 2 PRODUCTION GATE: PARTIAL`
 - `GAMEPAD MANUAL TEST: PENDING`
 
-Host/Client Carry synchronization and contention require the pending manual
-retest. Final disconnect polish, late join and latency evidence remain network
-follow-up work and are not pass claims.
+Host/Client normal-path Carry synchronization passed. Simultaneous contention,
+disconnect/critical-loot recovery, invalid-request reason logs, 3/4-player
+regression and physical two-PC topology evidence are not pass claims. Active
+mission late join is not a Sprint 2 Gate 2 blocker under controlled v5.1 because
+mission-time new join is currently rejected. Emulated latency/loss remains
+required before full network-owner approval.
 
 Technical evidence for the Drop/Reset reconciliation and neutral daylight-map
 follow-up: Editor and Game Development builds passed, Sprint 1 and Sprint 2
 automated validation passed, and `L_Sprint2_CarryTest` Map Check reported
-0 errors / 0 warnings. Multiplayer gameplay acceptance remains manual pending.
+0 errors / 0 warnings. See `SPRINT2_CLOSEOUT_AUDIT.md` for the controlled-source
+DONE / PARTIAL / PENDING classification.
