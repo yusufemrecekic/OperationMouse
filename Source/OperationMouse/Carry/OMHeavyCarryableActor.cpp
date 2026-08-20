@@ -11,6 +11,14 @@ AOMHeavyCarryableActor::AOMHeavyCarryableActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = false;
+
+	LeftCarrySlot = CreateDefaultSubobject<USceneComponent>(TEXT("LeftCarrySlot"));
+	LeftCarrySlot->SetupAttachment(GetRootComponent());
+	LeftCarrySlot->SetRelativeLocation(FVector(0.0f, -240.0f, -100.0f));
+
+	RightCarrySlot = CreateDefaultSubobject<USceneComponent>(TEXT("RightCarrySlot"));
+	RightCarrySlot->SetupAttachment(GetRootComponent());
+	RightCarrySlot->SetRelativeLocation(FVector(0.0f, 240.0f, -100.0f));
 }
 
 void AOMHeavyCarryableActor::BeginPlay()
@@ -96,6 +104,7 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 			HeavyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 		UpdateHeavyCarryTransform();
+		AlignCarriersToSlots();
 	}
 
 	UE_LOG(LogOperationMouse, Log, TEXT("[HeavyCarry][Joined] Carrier=%s Target=%s Holders=%d State=%s GameplayOnly=true"),
@@ -208,6 +217,7 @@ void AOMHeavyCarryableActor::Tick(float DeltaSeconds)
 	}
 
 	UpdateHeavyCarryTransform();
+	AlignCarriersToSlots();
 }
 
 void AOMHeavyCarryableActor::SetHeavyCarryState(EOMHeavyCarryState NewState)
@@ -225,6 +235,33 @@ void AOMHeavyCarryableActor::SetMovementPenaltyForAllHolders(bool bActive)
 		{
 			Character->SetHeavyCarryMovementPenaltyActive(bActive);
 		}
+	}
+}
+
+void AOMHeavyCarryableActor::AlignCarriersToSlots()
+{
+	if (ActiveCarriers.Num() != 2)
+	{
+		return;
+	}
+
+	for (int32 CarrierIndex = 0; CarrierIndex < ActiveCarriers.Num(); ++CarrierIndex)
+	{
+		UOMCarryComponent* Carrier = ActiveCarriers[CarrierIndex];
+		AOMMouseCharacter* Character = IsValid(Carrier) ? Cast<AOMMouseCharacter>(Carrier->GetOwner()) : nullptr;
+		USceneComponent* CharacterCarryPoint = IsValid(Carrier) ? Carrier->GetCarryPoint() : nullptr;
+		USceneComponent* Slot = GetSlotForCarrierIndex(CarrierIndex);
+		if (!IsValid(Character) || !IsValid(CharacterCarryPoint) || !IsValid(Slot))
+		{
+			continue;
+		}
+
+		const FVector AlignmentDelta = Slot->GetComponentLocation() - CharacterCarryPoint->GetComponentLocation();
+		Character->SetActorLocation(
+			Character->GetActorLocation() + AlignmentDelta,
+			true,
+			nullptr,
+			ETeleportType::None);
 	}
 }
 
@@ -275,9 +312,25 @@ void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
 	{
 		return;
 	}
-	const FVector Midpoint = (FirstPoint->GetComponentLocation() + SecondPoint->GetComponentLocation()) * 0.5f
-		+ FVector::UpVector * CarryHeightOffset;
-	SetActorLocation(Midpoint, false, nullptr, ETeleportType::TeleportPhysics);
+	const FVector FirstLocation = FirstPoint->GetComponentLocation();
+	const FVector SecondLocation = SecondPoint->GetComponentLocation();
+	const FVector HolderSeparation = SecondLocation - FirstLocation;
+	if (HolderSeparation.SizeSquared2D() > UE_KINDA_SMALL_NUMBER)
+	{
+		const float TargetYaw = HolderSeparation.Rotation().Yaw - 90.0f;
+		SetActorRotation(FRotator(0.0f, TargetYaw, 0.0f), ETeleportType::TeleportPhysics);
+	}
+
+	const FVector SlotMidpoint = (LeftCarrySlot->GetComponentLocation() + RightCarrySlot->GetComponentLocation()) * 0.5f;
+	// Slot midpoint maps directly to the two Character CarryPoints. The slots'
+	// relative height keeps the object above the holders without moving them up.
+	const FVector DesiredMidpoint = (FirstLocation + SecondLocation) * 0.5f;
+	SetActorLocation(GetActorLocation() + DesiredMidpoint - SlotMidpoint, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+USceneComponent* AOMHeavyCarryableActor::GetSlotForCarrierIndex(int32 CarrierIndex) const
+{
+	return CarrierIndex == 0 ? LeftCarrySlot.Get() : RightCarrySlot.Get();
 }
 
 void AOMHeavyCarryableActor::UpdateHeavyStatusText()

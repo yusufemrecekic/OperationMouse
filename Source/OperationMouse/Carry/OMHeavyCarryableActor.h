@@ -52,11 +52,21 @@ protected:
 private:
 	void SetHeavyCarryState(EOMHeavyCarryState NewState);
 	void SetMovementPenaltyForAllHolders(bool bActive);
+	void AlignCarriersToSlots();
 	void FreezeAtCurrentTransform();
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
 	void UpdateHeavyCarryTransform();
 	void UpdateHeavyStatusText();
 	void RemoveInvalidCarriers();
+	USceneComponent* GetSlotForCarrierIndex(int32 CarrierIndex) const;
+
+	/** First gameplay holder aligns its CarryPoint to this side of the object. */
+	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
+	TObjectPtr<USceneComponent> LeftCarrySlot;
+
+	/** Second gameplay holder aligns its CarryPoint to the opposite side. */
+	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
+	TObjectPtr<USceneComponent> RightCarrySlot;
 
 	/** Gameplay state only. Hilmi owns future replication/authority integration. */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
@@ -64,9 +74,6 @@ private:
 
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
 	EOMHeavyCarryState HeavyCarryState = EOMHeavyCarryState::Idle;
-
-	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Heavy Carry", meta = (ClampMin = "0.0"))
-	float CarryHeightOffset = 45.0f;
 
 	FTransform HeavyHomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedHeavyCollision = ECollisionEnabled::QueryAndPhysics;

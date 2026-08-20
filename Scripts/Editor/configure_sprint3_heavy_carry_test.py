@@ -64,7 +64,7 @@ def configure_map():
         raise RuntimeError("Sprint 2 donor map has no normal Carryable")
     normal = normal_carryables[0]
     normal.set_actor_label("Sprint3_NormalCarryable")
-    normal.set_actor_location(unreal.Vector(-350.0, -250.0, 80.0), False, False)
+    normal.set_actor_location(unreal.Vector(-280.0, -210.0, 80.0), False, False)
     normal.set_editor_property("tags", [HARNESS_TAG])
     if len(normal_carryables) > 1:
         actor_subsystem.destroy_actors(normal_carryables[1:])
@@ -72,13 +72,13 @@ def configure_map():
     existing_heavy = [actor for actor in actors if actor.get_class() == heavy_class]
     if existing_heavy:
         heavy = existing_heavy[0]
-        heavy.set_actor_location(unreal.Vector(350.0, 220.0, 95.0), False, False)
+        heavy.set_actor_location(unreal.Vector(260.0, 170.0, 95.0), False, False)
     else:
         heavy = spawn(
             actor_subsystem,
             heavy_class,
             "Sprint3_HeavyCarryable",
-            unreal.Vector(350.0, 220.0, 95.0),
+            unreal.Vector(260.0, 170.0, 95.0),
             unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0),
             unreal.Vector(1.7, 1.15, 1.0),
         )
@@ -95,7 +95,7 @@ def configure_map():
     for index, start in enumerate(starts[:2], start=1):
         start.set_actor_label(f"Sprint3_PlayerStart_{index}")
         start.set_actor_location(
-            unreal.Vector(-1050.0, -180.0 if index == 1 else 180.0, 100.0),
+            unreal.Vector(-760.0, -140.0 if index == 1 else 140.0, 100.0),
             False,
             False,
         )
@@ -113,20 +113,46 @@ def configure_map():
             actor_subsystem,
             reset_class,
             "Sprint3_Reset",
-            unreal.Vector(1050.0, 0.0, 55.0),
+            unreal.Vector(760.0, 0.0, 55.0),
             unreal.Rotator(roll=0.0, pitch=0.0, yaw=180.0),
         )
         reset.set_editor_property("test_role", unreal.OMTestInteractionRole.RESET)
     else:
         reset = reset_actors[0]
         reset.set_actor_label("Sprint3_Reset")
-        reset.set_actor_location(unreal.Vector(1050.0, 0.0, 55.0), False, False)
+        reset.set_actor_location(unreal.Vector(760.0, 0.0, 55.0), False, False)
         reset.set_editor_property("tags", [HARNESS_TAG])
 
-    add_text(actor_subsystem, "Sprint3_Label_Start", "START - 2 PLAYERS", unreal.Vector(-950.0, 0.0, 190.0))
-    add_text(actor_subsystem, "Sprint3_Label_Normal", "NORMAL CARRY REGRESSION", unreal.Vector(-350.0, -250.0, 210.0))
-    add_text(actor_subsystem, "Sprint3_Label_Heavy", "HEAVY CARRY - REQUIRES 2", unreal.Vector(350.0, 220.0, 240.0))
-    add_text(actor_subsystem, "Sprint3_Label_Reset", "RESET / RECOVERY", unreal.Vector(1050.0, 0.0, 190.0))
+    floor = next(
+        (
+            actor
+            for actor in actors
+            if actor.get_actor_label() in ("Sprint2_Floor", "Sprint3_Floor")
+        ),
+        None,
+    )
+    if floor is None:
+        raise RuntimeError("Sprint 2 donor floor is missing")
+    floor.set_actor_scale3d(unreal.Vector(22.0, 14.0, 0.5))
+    floor.set_actor_label("Sprint3_Floor")
+
+    drop_area = next(
+        (
+            actor
+            for actor in actors
+            if actor.get_actor_label() in ("Sprint2_DropArea", "Sprint3_DropArea")
+        ),
+        None,
+    )
+    if drop_area is not None:
+        drop_area.set_actor_location(unreal.Vector(0.0, -260.0, 2.5), False, False)
+        drop_area.set_actor_scale3d(unreal.Vector(1.6, 1.6, 0.05))
+        drop_area.set_actor_label("Sprint3_DropArea")
+
+    add_text(actor_subsystem, "Sprint3_Label_Start", "START - 2 PLAYERS", unreal.Vector(-690.0, 0.0, 190.0))
+    add_text(actor_subsystem, "Sprint3_Label_Normal", "NORMAL CARRY", unreal.Vector(-280.0, -210.0, 210.0))
+    add_text(actor_subsystem, "Sprint3_Label_Heavy", "HEAVY CARRY - 2 PLAYERS", unreal.Vector(260.0, 170.0, 240.0))
+    add_text(actor_subsystem, "Sprint3_Label_Reset", "RESET", unreal.Vector(760.0, 0.0, 190.0))
 
     world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
     world.get_world_settings().set_editor_property("kill_z", -1000.0)

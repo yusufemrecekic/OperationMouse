@@ -29,6 +29,9 @@ def validate_source_contract():
     character_cpp = (root / "Characters" / "OMMouseCharacter.cpp").read_text(encoding="utf-8")
     required = (
         "WaitingForSecondHolder",
+        "LeftCarrySlot",
+        "RightCarrySlot",
+        "AlignCarriersToSlots",
         "EOMHeavyCarryState::Carrying",
         "ActiveCarriers.Num() >= 2",
         "SetMovementPenaltyForAllHolders(true)",
@@ -65,6 +68,16 @@ def validate():
     if len(normal) != 1 or len(heavy) != 1:
         fail(f"Expected one normal and one Heavy Carryable, found normal={len(normal)} heavy={len(heavy)}")
 
+    heavy_cdo = unreal.get_default_object(heavy_class)
+    left_slot = heavy_cdo.get_editor_property("left_carry_slot")
+    right_slot = heavy_cdo.get_editor_property("right_carry_slot")
+    if left_slot is None or right_slot is None:
+        fail("Heavy Carryable does not expose LeftCarrySlot and RightCarrySlot")
+    if left_slot.get_editor_property("relative_location").y >= 0.0:
+        fail("LeftCarrySlot is not on the left side")
+    if right_slot.get_editor_property("relative_location").y <= 0.0:
+        fail("RightCarrySlot is not on the right side")
+
     starts = [actor for actor in actors if actor.get_class().get_name() == "PlayerStart"]
     if len(starts) < 2:
         fail(f"Expected two PlayerStarts, found {len(starts)}")
@@ -93,6 +106,13 @@ def validate():
         fail(f"Accepted daylight rig is incomplete: {missing}")
     if not world.get_world_settings().get_editor_property("force_no_precomputed_lighting"):
         fail("Sprint 3 graybox still depends on baked lighting")
+
+    floor = next((actor for actor in actors if actor.get_actor_label() == "Sprint3_Floor"), None)
+    if floor is None:
+        fail("Compact Sprint 3 floor is missing")
+    floor_scale = floor.get_actor_scale3d()
+    if floor_scale.x > 24.0 or floor_scale.y > 16.0:
+        fail(f"Sprint 3 technical floor is still oversized: {floor_scale}")
 
     text_actors = [actor for actor in actors if actor.get_actor_label().startswith("Sprint3_Label_")]
     if len(text_actors) < 4:

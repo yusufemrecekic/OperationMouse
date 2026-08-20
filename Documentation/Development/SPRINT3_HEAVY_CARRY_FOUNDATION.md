@@ -13,7 +13,9 @@ latency behavior. Those items belong to Hilmi's follow-up network pass.
 - `WaitingForSecondHolder` (`1` holder): the object is frozen at its current
   transform and waits for a second distinct Character.
 - `Carrying` (`2` holders): the object follows the midpoint of the two gameplay
-  CarryPoints and both Characters receive the Heavy Carry movement penalty.
+  CarryPoints, the first/second Characters align to `LeftCarrySlot` and
+  `RightCarrySlot`, and both receive the Heavy Carry movement penalty. The
+  separate slots keep the Characters outside the Heavy Carryable volume.
 - If one of two holders releases, the object freezes and returns to `Waiting`;
   the remaining Character keeps its hold without a speed penalty.
 - If the final holder releases, the object returns to the normal dropped/idle
@@ -25,7 +27,7 @@ latency behavior. Those items belong to Hilmi's follow-up network pass.
 
 `L_Sprint3_HeavyCarryTest` contains two PlayerStarts, one accepted normal
 Carryable regression fixture, one Heavy Carryable, one Reset fixture, prototype
-Characters and the accepted daylight graybox setup.
+Characters and a compact version of the accepted daylight graybox setup.
 
 - OperationMouseEditor Win64 Development: PASSED
 - Sprint 2 automated Carry regression: PASSED
@@ -57,6 +59,9 @@ system can be considered multiplayer-ready:
 
 ## Acceptance status
 
-- `MANUAL HEAVY CARRY TEST: PENDING`
+- Initial manual evidence: first holder entered Waiting, second holder activated
+  Heavy Carry, and both players moved the object together.
+- `MANUAL HEAVY CARRY RETEST: PENDING` for separate slot alignment and the
+  compact technical map.
 - `NETWORK HEAVY CARRY TEST: PENDING`
 - `GAMEPAD MANUAL TEST: PENDING`

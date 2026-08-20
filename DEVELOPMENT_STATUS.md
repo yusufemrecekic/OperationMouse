@@ -105,6 +105,7 @@ Repository setup: Complete
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
 - Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Core Host/Client synchronization passed; contention, disconnect/recovery, 3/4-player, physical two-PC and latency/loss evidence remain pending. Active-mission late join Carry state is deferred because controlled v5.1 currently rejects mission-time new joins; same-mission reconnect is V1 OUT.
 - Sprint 3 Heavy Carry gameplay foundation is implemented on Yusuf's branch only. Its holder/state replication, authoritative join/leave, contention, disconnect and adverse-network behavior intentionally remain unimplemented for Hilmi's network pass.
+- Sprint 3 initial manual gameplay check confirmed first-holder Waiting, second-holder activation and two-player object movement. The follow-up Left/Right slot alignment and compact-map visual retest remains pending and is not yet a milestone pass.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -136,7 +137,7 @@ Branch: `feature/yusuf-heavy-carry-foundation`
 
 Main files/assets: `AOMHeavyCarryableActor`, reused `UOMCarryComponent`, character movement-penalty hook, and `L_Sprint3_HeavyCarryTest`
 
-Status: HEAVY CARRY GAMEPLAY FOUNDATION IMPLEMENTED - AUTOMATED VALIDATION PASSED - MANUAL HEAVY CARRY TEST PENDING - NETWORK HEAVY CARRY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: HEAVY CARRY CORE FLOW MANUALLY OBSERVED - SLOT ALIGNMENT RETEST PENDING - NETWORK HEAVY CARRY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
