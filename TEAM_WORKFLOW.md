@@ -21,6 +21,8 @@ Bu belge küçük bir indie ekibinin Git, GitHub, Git LFS, Unreal Engine ve VS C
 
 `main`, ekibin çalışan ortak oyunudur; her zaman paylaşılabilir ve mümkün olduğunca stabil tutulur. Hiçbir geliştirme doğrudan `main` üzerinde yapılmaz.
 
+Bu kural dokümantasyon ve tek satırlık düzeltmeler için de geçerlidir. `main` üzerinde dosya değiştirmek, commit oluşturmak veya doğrudan push yapmak yasaktır. Her değişiklik rol prefix'ine uygun ayrı branch'te hazırlanır ve Pull Request üzerinden birleştirilir. Acil düzeltmeler de bu akışı atlamaz.
+
 Her ekip üyesi aynı **OperationMouse GitHub repository'sini** kendi bilgisayarına clone eder. Ayrı Unreal projeleri oluşturulmaz. Yeni bir görev her zaman güncel `main` üzerinden, görev sahibinin branch prefix'i kullanılarak açılır:
 
 - Ali: `feature/ali-*`
@@ -32,6 +34,8 @@ Standart teslim akışı değişmez:
 ```text
 latest main → branch → test → commit → push → Pull Request → merge
 ```
+
+PR'ı açan kişi kendi değişikliğini incelemeden birleştirmez. Gameplay/network/art ownership sınırını etkileyen PR, ilgili owner tarafından görülmeden merge edilmez. Merge sonrasında yeni görev açacak herkes önce yerel `main` branch'ini günceller.
 
 ### Kesin rol sahipliği
 
@@ -174,6 +178,64 @@ git lfs pull
 LFS normal Git geçmişinin hızla büyümesini engeller; fakat GitHub LFS storage ve bandwidth kotası kullanır. Küçük PNG/JPG referansları ve mevcut küçük GDD normal Git'te kalır. Yeni büyük formatlar otomatik eklenmez; ekip dosya boyutu ve kullanım sıklığını değerlendirir.
 
 Mevcut geçmişi `git lfs migrate` ile yeniden yazmak ancak ekip onayıyla yapılır.
+
+Clone sonrasında aşağıdaki kontrol hata vermemelidir:
+
+```powershell
+git lfs fsck
+git lfs status
+```
+
+`.uasset` veya `.umap` dosyası normal Git blob'u olarak görünüyorsa commit edilmeden önce durulur ve `.gitattributes` kontrol edilir.
+
+## Önerilen GitHub `main` koruması
+
+Repository planı branch protection/ruleset özelliğini desteklediğinde `main` için şu minimum ayarlar kullanılır:
+
+- Pull Request olmadan merge/push yapılmasını engelle.
+- Merge öncesinde en az **1 approval** zorunlu olsun.
+- Yeni commit gelince eski approval'ları geçersiz kıl.
+- Açık review conversation'larının çözülmesini zorunlu kıl.
+- Branch'in merge öncesinde güncel olmasını zorunlu kıl.
+- Projede güvenilir CI check'leri oluştuğunda Editor/Game build ve otomatik validation check'lerini required status check yap.
+- Force push ve branch deletion kapalı olsun.
+- Administrator/owner için bypass günlük geliştirmede kullanılmasın; yalnızca gerçek repository kurtarma durumuyla sınırlı olsun.
+
+OperationMouse private repository'sinde mevcut GitHub planı bu özelliği sunmuyorsa aynı kurallar ekip süreci olarak zorunludur: doğrudan `main` push yapılmaz, her değişiklik PR ile gelir ve en az bir başka owner tarafından incelenir. Teknik koruma açılabildiğinde GitHub üzerinde ayrıca etkinleştirilir.
+
+## İlk kurulum — Ali
+
+Ali ayrı bir Unreal projesi oluşturmaz; ortak repository'yi clone eder:
+
+```powershell
+git lfs install
+git clone https://github.com/yusufemrecekic/OperationMouse.git C:\Dev\OperationMouse
+Set-Location C:\Dev\OperationMouse
+git lfs pull
+git lfs fsck
+git switch main
+git pull --ff-only origin main
+git switch -c feature/ali-<task-name>
+```
+
+Ali Unreal Engine sürümünü `.uproject` ile eşleştirir, proje açılmadan önce kendisine atanmış `.umap/.uasset` dosyalarını ekipte duyurur ve yalnızca `feature/ali-*` branch'inden push/PR yapar.
+
+## İlk kurulum — Hilmi
+
+Hilmi aynı repository'yi kendi bilgisayarına clone eder:
+
+```powershell
+git lfs install
+git clone https://github.com/yusufemrecekic/OperationMouse.git C:\Dev\OperationMouse
+Set-Location C:\Dev\OperationMouse
+git lfs pull
+git lfs fsck
+git switch main
+git pull --ff-only origin main
+git switch -c feature/hilmi-<task-name>
+```
+
+Hilmi önce normal Editor/Game build ile ortamını doğrular; ardından network görevi için kendi `feature/hilmi-*` branch'inde çalışır. Yusuf'un gameplay davranışını veya Ali'nin visual/level kararlarını değiştirmesi gerekiyorsa ilgili owner'la önceden koordine eder. Network kabul kanıtlarını PR açıklamasına ekler; gereken görevlerde Host/Client, 2-PC, latency ve packet-loss sonuçlarını açıkça kaydeder.
 
 ## Unreal asset koordinasyonu
 
