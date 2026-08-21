@@ -7,6 +7,7 @@
 #include "Components/TextRenderComponent.h"
 #include "../Characters/OMMouseCharacter.h"
 #include "../OperationMouse.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -166,6 +167,21 @@ bool AOMCarryableActor::IsAvailableForGrab() const
 bool AOMCarryableActor::IsHeldBy(const AOMMouseCharacter* Character) const
 {
 	return IsValid(Character) && CurrentHolder == Character;
+}
+
+FVector AOMCarryableActor::ConstrainHolderMovement(
+	const AOMMouseCharacter* Holder,
+	const FVector& DesiredWorldMovement) const
+{
+	if (!IsValid(Holder) || !IsHeldBy(Holder) || CarryObstructionNormal.IsNearlyZero())
+	{
+		return DesiredWorldMovement;
+	}
+
+	const FVector ObstructionNormal = FVector(CarryObstructionNormal).GetSafeNormal();
+	return FVector::DotProduct(DesiredWorldMovement, ObstructionNormal) < 0.0f
+		? FVector::VectorPlaneProject(DesiredWorldMovement, ObstructionNormal)
+		: DesiredWorldMovement;
 }
 
 void AOMCarryableActor::ResetToHome()
@@ -345,18 +361,28 @@ void AOMCarryableActor::ClearHolderCollisionIgnores()
 	bAddedMeshIgnoreForHolder = false;
 	bAddedHolderIgnoreForCargo = false;
 	bCarryObstructed = false;
+	CarryObstructionNormal = FVector::ZeroVector;
 }
 
 void AOMCarryableActor::SetCarryObstructed(bool bNewObstructed, const FHitResult& Hit)
 {
-	if (bCarryObstructed == bNewObstructed)
+	const FVector NewNormal = bNewObstructed ? Hit.ImpactNormal.GetSafeNormal() : FVector::ZeroVector;
+	if (bCarryObstructed == bNewObstructed && FVector(CarryObstructionNormal).Equals(NewNormal, 0.01f))
 	{
 		return;
 	}
 
 	bCarryObstructed = bNewObstructed;
-	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Obstruction] Target=%s State=%s Hit=%s"),
-		*GetName(), bCarryObstructed ? TEXT("Blocked") : TEXT("Clear"), *GetNameSafe(Hit.GetActor()));
+	CarryObstructionNormal = NewNormal;
+	const UCharacterMovementComponent* Movement = IsValid(CurrentHolder)
+		? CurrentHolder->GetCharacterMovement()
+		: nullptr;
+	UE_LOG(LogOperationMouse, Log,
+		TEXT("[Carry][Obstruction] Target=%s State=%s Hit=%s Role=%s Holder=%s MovementMode=%d Normal=%s"),
+		*GetName(), bCarryObstructed ? TEXT("Blocked") : TEXT("Clear"), *GetNameSafe(Hit.GetActor()),
+		*UEnum::GetValueAsString(GetLocalRole()), *GetNameSafe(CurrentHolder),
+		Movement ? static_cast<int32>(Movement->MovementMode) : -1, *NewNormal.ToCompactString());
+	ForceNetUpdate();
 }
 
 void AOMCarryableActor::ApplyReplicatedWorldPresentation()
@@ -449,4 +475,5 @@ void AOMCarryableActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(AOMCarryableActor, CurrentHolder);
 	DOREPLIFETIME(AOMCarryableActor, AuthoritativeWorldTransform);
 	DOREPLIFETIME(AOMCarryableActor, WorldStateRevision);
+	DOREPLIFETIME(AOMCarryableActor, CarryObstructionNormal);
 }

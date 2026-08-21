@@ -15,11 +15,7 @@ enum class EOMHeavyCarryState : uint8
 	Carrying
 };
 
-/**
- * Yusuf-owned gameplay foundation for a two-player Heavy Carryable.
- * Holder state is intentionally local/non-replicated until Hilmi adds the
- * authoritative network contract in a separate pass.
- */
+/** Yusuf-owned two-player Heavy Carry gameplay with minimal replicated collision consistency. */
 UCLASS(Blueprintable)
 class OPERATIONMOUSE_API AOMHeavyCarryableActor : public AOMCarryableActor
 {
@@ -27,6 +23,7 @@ class OPERATIONMOUSE_API AOMHeavyCarryableActor : public AOMCarryableActor
 
 public:
 	AOMHeavyCarryableActor();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual FOMInteractionInfo GetInteractionInfo_Implementation(AActor* Interactor) const override;
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
@@ -38,12 +35,13 @@ public:
 	virtual bool IsHeldBy(const AOMMouseCharacter* Character) const override;
 	virtual bool IsAvailableForGrab() const override;
 	virtual void ResetToHome() override;
+	virtual FVector ConstrainHolderMovement(const AOMMouseCharacter* Holder, const FVector& DesiredWorldMovement) const override;
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Heavy Carry")
 	EOMHeavyCarryState GetHeavyCarryState() const { return HeavyCarryState; }
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Heavy Carry")
-	int32 GetHolderCount() const { return ActiveCarriers.Num(); }
+	int32 GetHolderCount() const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -53,6 +51,7 @@ protected:
 private:
 	void SetHeavyCarryState(EOMHeavyCarryState NewState);
 	void SetMovementPenaltyForAllHolders(bool bActive);
+	void ApplyReplicatedMovementPenalty();
 	void AlignCarriersToSlots();
 	void RefreshCarrierCollisionIgnores();
 	void ClearCarrierCollisionIgnores();
@@ -62,9 +61,16 @@ private:
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
 	void UpdateHeavyCarryTransform();
 	void SetHeavyCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
+	void SyncReplicatedCarryState();
+	void ApplyReplicatedCarryPresentation();
+	void CacheHeavyPresentationIfNeeded();
+	TArray<AOMMouseCharacter*> GetPresentationHolders() const;
 	void UpdateHeavyStatusText();
 	bool RemoveInvalidCarriers();
 	USceneComponent* GetSlotForCarrierIndex(int32 CarrierIndex) const;
+
+	UFUNCTION()
+	void OnRep_HeavyCarryNetworkState();
 
 	/** First gameplay holder aligns its CarryPoint to this side of the object. */
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
@@ -74,12 +80,22 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
 	TObjectPtr<USceneComponent> RightCarrySlot;
 
-	/** Gameplay state only. Hilmi owns future replication/authority integration. */
+	/** Server-only gameplay components. Network clients receive only actor/state presentation below. */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
 	TArray<TObjectPtr<UOMCarryComponent>> ActiveCarriers;
 
-	UPROPERTY(Transient, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
+	UPROPERTY(ReplicatedUsing = OnRep_HeavyCarryNetworkState, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
 	EOMHeavyCarryState HeavyCarryState = EOMHeavyCarryState::Idle;
+
+	UPROPERTY(ReplicatedUsing = OnRep_HeavyCarryNetworkState)
+	TObjectPtr<AOMMouseCharacter> ReplicatedFirstHolder;
+
+	UPROPERTY(ReplicatedUsing = OnRep_HeavyCarryNetworkState)
+	TObjectPtr<AOMMouseCharacter> ReplicatedSecondHolder;
+
+	/** Server sweep normal used by both authority and owning-client movement constraint. */
+	UPROPERTY(Replicated)
+	FVector_NetQuantizeNormal HeavyObstructionNormal = FVector::ZeroVector;
 
 	FTransform HeavyHomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedHeavyCollision = ECollisionEnabled::QueryAndPhysics;
@@ -87,6 +103,7 @@ private:
 	bool bSavedHeavySimulatePhysics = true;
 	bool bHeavyPresentationSaved = false;
 	bool bHeavyCarryObstructed = false;
+	TArray<TWeakObjectPtr<AOMMouseCharacter>> ReplicatedPenaltyCharacters;
 
 	/** Only pair-specific ignores added by Heavy Carry; cleared on release/reset. */
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> CollisionIgnoreSources;

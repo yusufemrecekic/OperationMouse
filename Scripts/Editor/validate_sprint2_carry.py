@@ -39,6 +39,7 @@ def validate_network_contract_source():
             "ReplicatedUsing = OnRep_CarriedActor",
             "UFUNCTION(Server, Reliable)",
             "ServerRequestDrop",
+            "ConstrainOwnerMovement",
         ),
         "carry_cpp": (
             "SetIsReplicatedByDefault(true)",
@@ -51,11 +52,13 @@ def validate_network_contract_source():
             "ReplicatedUsing = OnRep_CurrentHolder",
             "ReplicatedUsing = OnRep_WorldStateRevision",
             "AuthoritativeWorldTransform",
+            "CarryObstructionNormal",
         ),
         "actor_cpp": (
             "DOREPLIFETIME(AOMCarryableActor, CurrentHolder)",
             "DOREPLIFETIME(AOMCarryableActor, AuthoritativeWorldTransform)",
             "DOREPLIFETIME(AOMCarryableActor, WorldStateRevision)",
+            "DOREPLIFETIME(AOMCarryableActor, CarryObstructionNormal)",
             "ApplyCarryPresentation",
             "PublishAuthoritativeWorldState",
             "SetPhysicsLinearVelocity(FVector::ZeroVector)",
@@ -65,7 +68,10 @@ def validate_network_contract_source():
             "ServerBeginInteraction_Implementation",
             "Execute_CompleteInteraction",
         ),
-        "character_cpp": ("CarryComponent->RequestDrop()",),
+        "character_cpp": (
+            "CarryComponent->RequestDrop()",
+            "ConstrainVelocityForCarriedCargo",
+        ),
     }
     for file_key, tokens in required_tokens.items():
         for token in tokens:

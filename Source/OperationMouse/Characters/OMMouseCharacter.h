@@ -34,6 +34,7 @@ public:
 	virtual void OnRep_Controller() override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode = 0) override;
 
 protected:
@@ -57,6 +58,7 @@ private:
 	void StopInteraction();
 	void SetSprinting(bool bNewSprinting);
 	void RefreshMaxWalkSpeed();
+	void ConstrainVelocityForCarriedCargo();
 	void TryConsumeBufferedJump();
 
 	UFUNCTION(Server, Reliable)

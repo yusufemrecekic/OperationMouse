@@ -40,6 +40,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
 	virtual void ResetToHome();
 
+	/** Removes only the movement component that would drive carried cargo farther into an obstacle. */
+	virtual FVector ConstrainHolderMovement(const AOMMouseCharacter* Holder, const FVector& DesiredWorldMovement) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -84,6 +87,10 @@ private:
 	/** Changes for every Drop/Reset, including repeated resets to the same transform. */
 	UPROPERTY(ReplicatedUsing = OnRep_WorldStateRevision)
 	uint32 WorldStateRevision = 0;
+
+	/** Server sweep normal shared with the owning client so prediction uses the same blocked direction. */
+	UPROPERTY(Replicated)
+	FVector_NetQuantizeNormal CarryObstructionNormal = FVector::ZeroVector;
 
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry")
 	FOMInteractionInfo InteractionInfo;

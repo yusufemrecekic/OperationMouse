@@ -222,8 +222,34 @@ void AOMMouseCharacter::Move(const FInputActionValue& Value)
 	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	AddMovementInput(ForwardDirection, MovementInput.Y);
-	AddMovementInput(RightDirection, MovementInput.X);
+	FVector ForwardInput = ForwardDirection * MovementInput.Y;
+	FVector RightInput = RightDirection * MovementInput.X;
+	if (CarryComponent)
+	{
+		ForwardInput = CarryComponent->ConstrainOwnerMovement(ForwardInput);
+		RightInput = CarryComponent->ConstrainOwnerMovement(RightInput);
+	}
+
+	AddMovementInput(ForwardInput);
+	AddMovementInput(RightInput);
+}
+
+void AOMMouseCharacter::Tick(float DeltaSeconds)
+{
+	ConstrainVelocityForCarriedCargo();
+	Super::Tick(DeltaSeconds);
+	ConstrainVelocityForCarriedCargo();
+}
+
+void AOMMouseCharacter::ConstrainVelocityForCarriedCargo()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!CarryComponent || !Movement || (!HasAuthority() && !IsLocallyControlled()))
+	{
+		return;
+	}
+
+	Movement->Velocity = CarryComponent->ConstrainOwnerMovement(Movement->Velocity);
 }
 
 void AOMMouseCharacter::Look(const FInputActionValue& Value)

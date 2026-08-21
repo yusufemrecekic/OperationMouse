@@ -202,6 +202,14 @@ AOMCarryableActor* UOMCarryComponent::GetCarriedActor() const
 	return IsCarrying() ? CarriedActor.Get() : nullptr;
 }
 
+FVector UOMCarryComponent::ConstrainOwnerMovement(const FVector& DesiredWorldMovement) const
+{
+	const AOMMouseCharacter* OwnerCharacter = Cast<AOMMouseCharacter>(GetOwner());
+	return IsValid(CarriedActor) && IsValid(OwnerCharacter)
+		? CarriedActor->ConstrainHolderMovement(OwnerCharacter, DesiredWorldMovement)
+		: DesiredWorldMovement;
+}
+
 void UOMCarryComponent::ReleaseForRecovery(AOMCarryableActor* Carryable)
 {
 	if (!GetOwner() || !GetOwner()->HasAuthority())

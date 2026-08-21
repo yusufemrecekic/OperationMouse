@@ -38,6 +38,8 @@ def validate_source_contract():
         "MoveIgnoreActorAdd",
         "MoveIgnoreActorRemove",
 		"SetHeavyCarryObstructed",
+		"ConstrainHolderMovement",
+		"HeavyObstructionNormal",
 		"MinimumStableSeparation",
 		"SetActorLocationAndRotation",
 		"ECollisionEnabled::QueryOnly",
@@ -71,9 +73,18 @@ def validate_source_contract():
             fail(f"Bounds-aware normal Carry placement token missing: {token}")
     if "AttachToComponent(NewCarryPoint" in carryable_cpp:
         fail("Normal Carry still attaches cargo directly and bypasses obstruction sweeps")
-    if "UFUNCTION(Server" in heavy_h or "DOREPLIFETIME" in heavy_cpp or "ReplicatedUsing" in heavy_h:
-        fail("Yusuf Heavy Carry files contain Hilmi-owned network implementation")
-    unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|YUSUF_GAMEPLAY_SOURCE_CONTRACT")
+    for token in (
+        "ReplicatedUsing = OnRep_HeavyCarryNetworkState",
+        "DOREPLIFETIME(AOMHeavyCarryableActor, HeavyCarryState)",
+        "DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedFirstHolder)",
+        "DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedSecondHolder)",
+        "ApplyReplicatedCarryPresentation",
+    ):
+        if token not in combined:
+            fail(f"Heavy Carry collision-consistency token missing: {token}")
+    if "UFUNCTION(Server" in heavy_h or "NetMulticast" in combined:
+        fail("Heavy Carry added a custom movement RPC instead of replicated collision consistency")
+    unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|GAMEPLAY_AND_COLLISION_CONSISTENCY_SOURCE_CONTRACT")
 
 
 def validate():
@@ -156,7 +167,7 @@ def validate():
         "OM_SPRINT3_HEAVY_VALIDATION|PASS|"
         "normal_carry_regression_fixture=1|heavy_carry_fixture=1|starts=2|"
         "prototype_game_mode=present|daylight_graybox=present|map_check=executed|"
-        "network_implementation=intentionally_pending"
+        "network_movement_architecture=intentionally_pending|collision_consistency=present"
     )
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|FINAL|PASS")
 
