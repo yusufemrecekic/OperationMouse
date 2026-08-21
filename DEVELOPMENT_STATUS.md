@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Sprint 3 Heavy Carry Gameplay Foundation
+Sprint 3 Mission Gameplay Foundation
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Yusuf Heavy Carry gameplay foundation and final two-player Listen Server manual retest PASSED; Hilmi network acceptance remains pending
+Current: Yusuf Mission gameplay foundation implemented and structurally validated; manual Mission and Hilmi network acceptance remain pending
 
-Next: Hilmi contention, authoritative join/leave, disconnect/critical-loot recovery, late-state reconciliation, 3/4-player and physical two-PC evidence; emulated latency/loss before full network approval; physical gamepad evidence remains pending
+Next: manual Mission harness verification, then Hilmi's authoritative Mission state/interaction synchronization, contention, disconnect/recovery, late-state reconciliation, 3/4-player and physical two-PC evidence; emulated latency/loss before full Mission network approval; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -84,6 +84,8 @@ Next: Hilmi contention, authoritative join/leave, disconnect/critical-loot recov
 - Final Sprint 2 core Host + Client manual retest PASSED: Client Grab, Client Drop synchronization, Server Grab/Drop, Reset synchronization, Carry movement synchronization, lighting/readability and text readability were verified.
 - PR #12 merged into `main` at `6c6e1a7`. The controlled Production Control/Tracker v5.1 closeout audit classifies Sprint 2 as PARTIAL: normal two-player Carry is proven, while simultaneous contention, invalid-request logs, disconnect/critical-loot recovery, 3/4-player regression, physical two-PC topology and latency/loss network approval evidence remain open.
 - Final Sprint 3 Heavy Carry Listen Server manual retest PASSED: Small Carry Pawn/world obstruction and holder clamp, Heavy Carry client-jitter removal, stable close-holder/jump behavior, Pawn/world obstruction, Release and Reset were verified. This closes Yusuf gameplay acceptance only; Hilmi network evidence and physical gamepad evidence remain pending.
+- Sprint 3 Mission gameplay foundation implemented without Level Blueprint gameplay: `UOMMissionDefinition`, `AOMMissionManager`, and a thin existing-interaction adapter implement guarded Inactive/Active/Completed/Failed transitions, Mission ID, objective progress, Start, Complete, Fail, Reset and Retry.
+- Dedicated `L_Sprint3_MissionTest` contains a compact daylight prototype-character harness for Start, Complete Objective, Fail, Reset and Retry. Editor build, targeted Mission validation, Sprint 2 Carry regression, Sprint 3 Heavy Carry regression and Map Check (0 errors / 0 warnings) passed. Manual Mission and Hilmi network acceptance remain pending.
 
 ## Repository
 
@@ -107,6 +109,7 @@ Repository setup: Complete
 - Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Core Host/Client synchronization passed; contention, disconnect/recovery, 3/4-player, physical two-PC and latency/loss evidence remain pending. Active-mission late join Carry state is deferred because controlled v5.1 currently rejects mission-time new joins; same-mission reconnect is V1 OUT.
 - Sprint 3 includes minimal replicated holder/state and collision consistency needed to stop owning-client prediction fighting. Hilmi still owns authoritative contention, disconnect/late-state recovery, adverse-network behavior and formal physical-network evidence.
 - Sprint 3 Yusuf gameplay acceptance passed, but it is not full multiplayer/network acceptance.
+- Mission gameplay currently has no replicated Mission state, objective progress or network request authority by design. Hilmi must provide the server-authoritative public Mission snapshot, request validation, contention, disconnect/recovery, late-state and adverse-network evidence before network acceptance.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -130,15 +133,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (Heavy Carry gameplay foundation) / Hilmi Tunahan network implementation pending
+Developer: Yusuf Emre (Mission gameplay foundation) / Hilmi Tunahan network implementation pending
 
-System: Sprint 3 Heavy Carry Gameplay Foundation
+System: Sprint 3 Mission Gameplay Foundation
 
-Branch: `feature/yusuf-heavy-carry-foundation`
+Branch: `feature/yusuf-mission-foundation`
 
-Main files/assets: `AOMHeavyCarryableActor`, reused `UOMCarryComponent`, character movement-penalty hook, and `L_Sprint3_HeavyCarryTest`
+Main files/assets: `UOMMissionDefinition`, `AOMMissionManager`, `AOMMissionInteractionActor`, and `L_Sprint3_MissionTest`
 
-Status: YUSUF HEAVY CARRY GAMEPLAY MANUAL RETEST PASSED - NETWORK HEAVY CARRY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: YUSUF MISSION GAMEPLAY FOUNDATION BUILT - MANUAL MISSION TEST PENDING - NETWORK MISSION TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
