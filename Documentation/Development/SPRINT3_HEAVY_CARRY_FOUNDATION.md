@@ -2,10 +2,11 @@
 
 ## Scope and ownership
 
-This branch contains Yusuf's gameplay-only Heavy Carry foundation. It reuses
-the accepted Sprint 2 Carry component and deliberately does not add Heavy Carry
-RPCs, replicated holder properties, contention policy, disconnect handling or
-latency behavior. Those items belong to Hilmi's follow-up network pass.
+This branch contains Yusuf's Heavy Carry gameplay foundation. It reuses the
+accepted Sprint 2 Carry component. A minimal replicated state/holder and
+collision-consistency layer keeps owning-client CharacterMovement prediction
+aligned with the server; it does not replace Hilmi's authoritative contention,
+disconnect, late-join, latency or physical-network evidence pass.
 
 ## Gameplay state flow
 
@@ -38,6 +39,20 @@ Characters and a compact version of the accepted daylight graybox setup.
 Automated validation proves class/map structure and guards the ownership
 boundary. It does not replace manual gameplay or multiplayer evidence.
 
+## Final manual evidence
+
+The final two-player Listen Server retest PASSED:
+
+- Small Carry blocks other Characters and world geometry without pushing them.
+- Small Carry obstruction clamps cargo and holder movement in the blocked direction.
+- Heavy Carry client correction/jitter is resolved.
+- Close holder spacing remains stable, including while jumping.
+- Heavy Carry blocks Pawn/world obstruction without penetration or physics pushing.
+- Release and Reset clear holder state, penalties and collision exceptions correctly.
+
+This is Yusuf gameplay acceptance. It is not Hilmi network acceptance and does
+not claim contention, disconnect, late-join, latency/loss or physical two-PC evidence.
+
 ## Hilmi network handoff
 
 Hilmi must design and approve the authoritative network contract before this
@@ -59,9 +74,7 @@ system can be considered multiplayer-ready:
 
 ## Acceptance status
 
-- Initial manual evidence: first holder entered Waiting, second holder activated
-  Heavy Carry, and both players moved the object together.
-- `MANUAL HEAVY CARRY RETEST: PENDING` for separate slot alignment and the
-  compact technical map.
+- `MANUAL HEAVY CARRY RETEST: PASSED` for Waiting/Carrying, slots, obstruction,
+  holder stability, jump stability, Release and Reset.
 - `NETWORK HEAVY CARRY TEST: PENDING`
 - `GAMEPAD MANUAL TEST: PENDING`
