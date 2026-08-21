@@ -32,6 +32,9 @@ def validate_source_contract():
         "LeftCarrySlot",
         "RightCarrySlot",
         "AlignCarriersToSlots",
+        "RefreshCarrierCollisionIgnores",
+        "IgnoreActorWhenMoving",
+        "GetMoveIgnoreActors",
         "EOMHeavyCarryState::Carrying",
         "ActiveCarriers.Num() >= 2",
         "SetMovementPenaltyForAllHolders(true)",
@@ -45,6 +48,8 @@ def validate_source_contract():
             fail(f"Heavy Carry gameplay token missing: {token}")
     if "SetHeavyCarryMovementPenaltyActive" not in character_cpp:
         fail("Character movement-penalty gameplay hook is missing")
+    if "FVector(160.0f, 0.0f, 35.0f)" not in character_cpp:
+        fail("Normal CarryPoint does not keep the object safely in front of the capsule")
     if "UFUNCTION(Server" in heavy_h or "DOREPLIFETIME" in heavy_cpp or "ReplicatedUsing" in heavy_h:
         fail("Yusuf Heavy Carry files contain Hilmi-owned network implementation")
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|YUSUF_GAMEPLAY_SOURCE_CONTRACT")

@@ -58,7 +58,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 
 	CarryPoint = CreateDefaultSubobject<USceneComponent>(TEXT("CarryPoint"));
 	CarryPoint->SetupAttachment(GetCapsuleComponent());
-	CarryPoint->SetRelativeLocation(FVector(100.0f, 0.0f, 35.0f));
+	CarryPoint->SetRelativeLocation(FVector(160.0f, 0.0f, 35.0f));
 
 	TraversalComponent = CreateDefaultSubobject<UOMTraversalComponent>(TEXT("TraversalComponent"));
 	InteractionComponent = CreateDefaultSubobject<UOMInteractionComponent>(TEXT("InteractionComponent"));

@@ -5,6 +5,7 @@
 #include "OMHeavyCarryableActor.generated.h"
 
 class UOMCarryComponent;
+class UPrimitiveComponent;
 
 UENUM(BlueprintType)
 enum class EOMHeavyCarryState : uint8
@@ -53,11 +54,14 @@ private:
 	void SetHeavyCarryState(EOMHeavyCarryState NewState);
 	void SetMovementPenaltyForAllHolders(bool bActive);
 	void AlignCarriersToSlots();
+	void RefreshCarrierCollisionIgnores();
+	void ClearCarrierCollisionIgnores();
+	void AddCarrierCollisionIgnore(UPrimitiveComponent* SourceComponent, AActor* TargetActor);
 	void FreezeAtCurrentTransform();
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
 	void UpdateHeavyCarryTransform();
 	void UpdateHeavyStatusText();
-	void RemoveInvalidCarriers();
+	bool RemoveInvalidCarriers();
 	USceneComponent* GetSlotForCarrierIndex(int32 CarrierIndex) const;
 
 	/** First gameplay holder aligns its CarryPoint to this side of the object. */
@@ -79,4 +83,8 @@ private:
 	TEnumAsByte<ECollisionEnabled::Type> SavedHeavyCollision = ECollisionEnabled::QueryAndPhysics;
 	bool bSavedHeavySimulatePhysics = true;
 	bool bHeavyPresentationSaved = false;
+
+	/** Only pair-specific ignores added by Heavy Carry; cleared on release/reset. */
+	TArray<TWeakObjectPtr<UPrimitiveComponent>> CollisionIgnoreSources;
+	TArray<TWeakObjectPtr<AActor>> CollisionIgnoreTargets;
 };
