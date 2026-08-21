@@ -42,6 +42,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	friend class UOMCarryComponent;
@@ -53,6 +55,11 @@ private:
 	void OnRep_WorldStateRevision();
 
 	void ApplyCarryPresentation(USceneComponent* NewCarryPoint);
+	FTransform BuildCarryTargetTransform(USceneComponent* CarryPoint) const;
+	void UpdateCarriedTransform();
+	void ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder);
+	void ClearHolderCollisionIgnores();
+	void SetCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
 	void ApplyReplicatedWorldPresentation();
 	void ReconcileReplicatedPresentation();
 	void SaveWorldStateIfNeeded();
@@ -95,6 +102,11 @@ private:
 
 	FTransform HomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
+	TEnumAsByte<ECollisionResponse> SavedPawnCollisionResponse = ECR_Block;
 	bool bSavedSimulatePhysics = true;
 	bool bHasSavedWorldState = false;
+	bool bAddedMeshIgnoreForHolder = false;
+	bool bAddedHolderIgnoreForCargo = false;
+	bool bCarryObstructed = false;
+	TWeakObjectPtr<AOMMouseCharacter> CollisionIgnoredHolder;
 };

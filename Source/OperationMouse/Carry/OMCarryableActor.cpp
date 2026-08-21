@@ -14,6 +14,8 @@ AOMCarryableActor::AOMCarryableActor()
 {
 	bReplicates = true;
 	SetReplicateMovement(true);
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	SetRootComponent(Mesh);
@@ -51,6 +53,29 @@ void AOMCarryableActor::BeginPlay()
 		WorldStateRevision = 1;
 	}
 	UpdateStatusText();
+}
+
+void AOMCarryableActor::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (!HasAuthority() || !IsValid(CurrentHolder))
+	{
+		return;
+	}
+
+	if (UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>())
+	{
+		if (IsValid(HolderCarryComponent->GetCarryPoint()))
+		{
+			UpdateCarriedTransform();
+		}
+	}
+}
+
+void AOMCarryableActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ClearHolderCollisionIgnores();
+	Super::EndPlay(EndPlayReason);
 }
 
 FOMInteractionInfo AOMCarryableActor::GetInteractionInfo_Implementation(AActor* Interactor) const
@@ -111,6 +136,7 @@ bool AOMCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneComponen
 
 	CurrentHolder = NewHolder;
 	ApplyCarryPresentation(NewCarryPoint);
+	SetActorTickEnabled(HasAuthority());
 	ForceNetUpdate();
 	return true;
 }
@@ -122,6 +148,8 @@ bool AOMCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, const FVe
 		return false;
 	}
 
+	SetActorTickEnabled(false);
+	ClearHolderCollisionIgnores();
 	CurrentHolder = nullptr;
 	FTransform DropTransform = GetActorTransform();
 	DropTransform.SetLocation(DropLocation);
@@ -155,6 +183,8 @@ void AOMCarryableActor::ResetToHome()
 		}
 	}
 
+	SetActorTickEnabled(false);
+	ClearHolderCollisionIgnores();
 	CurrentHolder = nullptr;
 	PublishAuthoritativeWorldState(HomeTransform);
 	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Reset] Target=%s Authority=Server"), *GetName());
@@ -194,6 +224,7 @@ void AOMCarryableActor::SaveWorldStateIfNeeded()
 	}
 
 	SavedCollisionEnabled = Mesh->GetCollisionEnabled();
+	SavedPawnCollisionResponse = Mesh->GetCollisionResponseToChannel(ECC_Pawn);
 	bSavedSimulatePhysics = Mesh->IsSimulatingPhysics();
 	bHasSavedWorldState = true;
 }
@@ -207,27 +238,125 @@ void AOMCarryableActor::ApplyCarryPresentation(USceneComponent* NewCarryPoint)
 
 	SaveWorldStateIfNeeded();
 
-	FVector SafeRelativeOffset = CarryOffset;
-	if (const AOMMouseCharacter* Holder = Cast<AOMMouseCharacter>(NewCarryPoint->GetOwner()))
+	ClearHolderCollisionIgnores();
+	Mesh->SetSimulatePhysics(false);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	ApplyHolderCollisionIgnores(Cast<AOMMouseCharacter>(NewCarryPoint->GetOwner()));
+	if (HasAuthority())
 	{
-		const UCapsuleComponent* Capsule = Holder->GetCapsuleComponent();
-		const float CapsuleRadius = IsValid(Capsule) ? Capsule->GetScaledCapsuleRadius() : 0.0f;
-		const float ObjectRadius = Mesh->Bounds.SphereRadius;
-		const float SafeCenterDistance = FMath::Max(
-			MinimumCarryDistance,
-			CapsuleRadius + ObjectRadius + CarryClearance);
-		const float CarryPointForwardDistance = FVector::DotProduct(
-			NewCarryPoint->GetComponentLocation() - Holder->GetActorLocation(),
-			Holder->GetActorForwardVector());
-		SafeRelativeOffset.X += SafeCenterDistance - CarryPointForwardDistance;
+		UpdateCarriedTransform();
+	}
+	UpdateStatusText();
+}
+
+FTransform AOMCarryableActor::BuildCarryTargetTransform(USceneComponent* CarryPoint) const
+{
+	FTransform TargetTransform = GetActorTransform();
+	if (!IsValid(CarryPoint) || !Mesh)
+	{
+		return TargetTransform;
 	}
 
-	Mesh->SetSimulatePhysics(false);
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AttachToComponent(NewCarryPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	SetActorRelativeLocation(SafeRelativeOffset);
-	SetActorRelativeRotation(FRotator::ZeroRotator);
-	UpdateStatusText();
+	const AOMMouseCharacter* Holder = Cast<AOMMouseCharacter>(CarryPoint->GetOwner());
+	if (!IsValid(Holder))
+	{
+		return TargetTransform;
+	}
+
+	const UCapsuleComponent* Capsule = Holder->GetCapsuleComponent();
+	const float CapsuleRadius = IsValid(Capsule) ? Capsule->GetScaledCapsuleRadius() : 0.0f;
+	const float ObjectRadius = Mesh->Bounds.SphereRadius;
+	const float SafeCenterDistance = FMath::Max(
+		MinimumCarryDistance,
+		CapsuleRadius + ObjectRadius + CarryClearance);
+	const float CarryPointForwardDistance = FVector::DotProduct(
+		CarryPoint->GetComponentLocation() - Holder->GetActorLocation(),
+		Holder->GetActorForwardVector());
+
+	FVector LocalOffset = CarryOffset;
+	LocalOffset.X += SafeCenterDistance - CarryPointForwardDistance;
+	TargetTransform.SetLocation(
+		CarryPoint->GetComponentLocation()
+		+ CarryPoint->GetComponentQuat().RotateVector(LocalOffset));
+	TargetTransform.SetRotation(CarryPoint->GetComponentQuat());
+	return TargetTransform;
+}
+
+void AOMCarryableActor::UpdateCarriedTransform()
+{
+	if (!HasAuthority() || !IsValid(CurrentHolder) || !Mesh)
+	{
+		return;
+	}
+
+	UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>();
+	USceneComponent* CarryPoint = HolderCarryComponent ? HolderCarryComponent->GetCarryPoint() : nullptr;
+	if (!IsValid(CarryPoint))
+	{
+		return;
+	}
+
+	FHitResult Hit;
+	const FTransform TargetTransform = BuildCarryTargetTransform(CarryPoint);
+	SetActorLocationAndRotation(
+		TargetTransform.GetLocation(),
+		TargetTransform.GetRotation(),
+		true,
+		&Hit,
+		ETeleportType::None);
+	SetCarryObstructed(Hit.bBlockingHit, Hit);
+}
+
+void AOMCarryableActor::ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder)
+{
+	if (!IsValid(Holder) || !Mesh)
+	{
+		return;
+	}
+
+	CollisionIgnoredHolder = Holder;
+	if (!Mesh->GetMoveIgnoreActors().Contains(Holder))
+	{
+		Mesh->IgnoreActorWhenMoving(Holder, true);
+		bAddedMeshIgnoreForHolder = true;
+	}
+	if (UCapsuleComponent* Capsule = Holder->GetCapsuleComponent();
+		IsValid(Capsule) && !Capsule->GetMoveIgnoreActors().Contains(this))
+	{
+		Holder->MoveIgnoreActorAdd(this);
+		bAddedHolderIgnoreForCargo = true;
+	}
+}
+
+void AOMCarryableActor::ClearHolderCollisionIgnores()
+{
+	AOMMouseCharacter* Holder = CollisionIgnoredHolder.Get();
+	if (IsValid(Holder) && Mesh && bAddedMeshIgnoreForHolder)
+	{
+		Mesh->IgnoreActorWhenMoving(Holder, false);
+	}
+	if (IsValid(Holder) && bAddedHolderIgnoreForCargo)
+	{
+		Holder->MoveIgnoreActorRemove(this);
+	}
+	CollisionIgnoredHolder = nullptr;
+	bAddedMeshIgnoreForHolder = false;
+	bAddedHolderIgnoreForCargo = false;
+	bCarryObstructed = false;
+}
+
+void AOMCarryableActor::SetCarryObstructed(bool bNewObstructed, const FHitResult& Hit)
+{
+	if (bCarryObstructed == bNewObstructed)
+	{
+		return;
+	}
+
+	bCarryObstructed = bNewObstructed;
+	UE_LOG(LogOperationMouse, Log, TEXT("[Carry][Obstruction] Target=%s State=%s Hit=%s"),
+		*GetName(), bCarryObstructed ? TEXT("Blocked") : TEXT("Clear"), *GetNameSafe(Hit.GetActor()));
 }
 
 void AOMCarryableActor::ApplyReplicatedWorldPresentation()
@@ -238,7 +367,9 @@ void AOMCarryableActor::ApplyReplicatedWorldPresentation()
 	}
 
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	ClearHolderCollisionIgnores();
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, SavedPawnCollisionResponse);
 	SetActorTransform(AuthoritativeWorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	bHasSavedWorldState = false;
 	UpdateStatusText();
@@ -283,6 +414,7 @@ void AOMCarryableActor::PublishAuthoritativeWorldState(const FTransform& TargetT
 void AOMCarryableActor::RestoreWorldState(const FTransform& TargetTransform)
 {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	ClearHolderCollisionIgnores();
 	if (Mesh->IsSimulatingPhysics())
 	{
 		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
@@ -291,6 +423,7 @@ void AOMCarryableActor::RestoreWorldState(const FTransform& TargetTransform)
 	Mesh->SetSimulatePhysics(false);
 	SetActorTransform(TargetTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, SavedPawnCollisionResponse);
 	Mesh->SetSimulatePhysics(bSavedSimulatePhysics);
 	bHasSavedWorldState = false;
 	UpdateStatusText();

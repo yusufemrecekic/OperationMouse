@@ -61,6 +61,7 @@ private:
 	void FreezeAtCurrentTransform();
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
 	void UpdateHeavyCarryTransform();
+	void SetHeavyCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
 	void UpdateHeavyStatusText();
 	bool RemoveInvalidCarriers();
 	USceneComponent* GetSlotForCarrierIndex(int32 CarrierIndex) const;
@@ -82,8 +83,10 @@ private:
 
 	FTransform HeavyHomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedHeavyCollision = ECollisionEnabled::QueryAndPhysics;
+	TEnumAsByte<ECollisionResponse> SavedHeavyPawnCollisionResponse = ECR_Block;
 	bool bSavedHeavySimulatePhysics = true;
 	bool bHeavyPresentationSaved = false;
+	bool bHeavyCarryObstructed = false;
 
 	/** Only pair-specific ignores added by Heavy Carry; cleared on release/reset. */
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> CollisionIgnoreSources;

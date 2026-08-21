@@ -37,6 +37,10 @@ def validate_source_contract():
         "GetMoveIgnoreActors",
         "MoveIgnoreActorAdd",
         "MoveIgnoreActorRemove",
+		"SetHeavyCarryObstructed",
+		"MinimumStableSeparation",
+		"SetActorLocationAndRotation",
+		"ECollisionEnabled::QueryOnly",
         "EOMHeavyCarryState::Carrying",
         "ActiveCarriers.Num() >= 2",
         "SetMovementPenaltyForAllHolders(true)",
@@ -54,9 +58,19 @@ def validate_source_contract():
         fail("Character movement-penalty gameplay hook is missing")
     carryable_h = (root / "Carry" / "OMCarryableActor.h").read_text(encoding="utf-8")
     carryable_cpp = (root / "Carry" / "OMCarryableActor.cpp").read_text(encoding="utf-8")
-    for token in ("MinimumCarryDistance", "CarryClearance", "Mesh->Bounds.SphereRadius"):
+    for token in (
+        "MinimumCarryDistance",
+        "CarryClearance",
+        "Mesh->Bounds.SphereRadius",
+        "SetActorLocationAndRotation",
+        "ECollisionEnabled::QueryOnly",
+        "ApplyHolderCollisionIgnores",
+        "ClearHolderCollisionIgnores",
+    ):
         if token not in carryable_h + carryable_cpp:
             fail(f"Bounds-aware normal Carry placement token missing: {token}")
+    if "AttachToComponent(NewCarryPoint" in carryable_cpp:
+        fail("Normal Carry still attaches cargo directly and bypasses obstruction sweeps")
     if "UFUNCTION(Server" in heavy_h or "DOREPLIFETIME" in heavy_cpp or "ReplicatedUsing" in heavy_h:
         fail("Yusuf Heavy Carry files contain Hilmi-owned network implementation")
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|YUSUF_GAMEPLAY_SOURCE_CONTRACT")

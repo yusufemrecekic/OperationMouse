@@ -108,7 +108,9 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 		SetMovementPenaltyForAllHolders(true);
 		if (UStaticMeshComponent* HeavyMesh = FindComponentByClass<UStaticMeshComponent>())
 		{
-			HeavyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			HeavyMesh->SetSimulatePhysics(false);
+			HeavyMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			HeavyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		}
 		UpdateHeavyCarryTransform();
 		RefreshCarrierCollisionIgnores();
@@ -376,6 +378,7 @@ void AOMHeavyCarryableActor::FreezeAtCurrentTransform()
 	if (!bHeavyPresentationSaved)
 	{
 		SavedHeavyCollision = HeavyMesh->GetCollisionEnabled();
+		SavedHeavyPawnCollisionResponse = HeavyMesh->GetCollisionResponseToChannel(ECC_Pawn);
 		bSavedHeavySimulatePhysics = HeavyMesh->IsSimulatingPhysics();
 		bHeavyPresentationSaved = true;
 	}
@@ -384,6 +387,7 @@ void AOMHeavyCarryableActor::FreezeAtCurrentTransform()
 	HeavyMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 	HeavyMesh->SetSimulatePhysics(false);
 	HeavyMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	bHeavyCarryObstructed = false;
 }
 
 void AOMHeavyCarryableActor::RestoreWorldPresentation(const FTransform& TargetTransform)
@@ -397,8 +401,10 @@ void AOMHeavyCarryableActor::RestoreWorldPresentation(const FTransform& TargetTr
 	HeavyMesh->SetSimulatePhysics(false);
 	SetActorTransform(TargetTransform, false, nullptr, ETeleportType::TeleportPhysics);
 	HeavyMesh->SetCollisionEnabled(SavedHeavyCollision);
+	HeavyMesh->SetCollisionResponseToChannel(ECC_Pawn, SavedHeavyPawnCollisionResponse);
 	HeavyMesh->SetSimulatePhysics(bSavedHeavySimulatePhysics);
 	bHeavyPresentationSaved = false;
+	bHeavyCarryObstructed = false;
 }
 
 void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
@@ -416,17 +422,47 @@ void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
 	const FVector FirstLocation = FirstPoint->GetComponentLocation();
 	const FVector SecondLocation = SecondPoint->GetComponentLocation();
 	const FVector HolderSeparation = SecondLocation - FirstLocation;
+	const float MinimumStableSeparation =
+		(LeftCarrySlot->GetRelativeLocation() - RightCarrySlot->GetRelativeLocation()).Size2D() * 0.5f;
+	if (HolderSeparation.Size2D() < MinimumStableSeparation)
+	{
+		SetHeavyCarryObstructed(true, FHitResult());
+		return;
+	}
+
+	FTransform DesiredTransform = GetActorTransform();
 	if (HolderSeparation.SizeSquared2D() > UE_KINDA_SMALL_NUMBER)
 	{
 		const float TargetYaw = HolderSeparation.Rotation().Yaw - 90.0f;
-		SetActorRotation(FRotator(0.0f, TargetYaw, 0.0f), ETeleportType::TeleportPhysics);
+		DesiredTransform.SetRotation(FRotator(0.0f, TargetYaw, 0.0f).Quaternion());
 	}
 
-	const FVector SlotMidpoint = (LeftCarrySlot->GetComponentLocation() + RightCarrySlot->GetComponentLocation()) * 0.5f;
-	// Slot midpoint maps directly to the two Character CarryPoints. The slots'
-	// relative height keeps the object above the holders without moving them up.
+	const FVector SlotMidpointLocal =
+		(LeftCarrySlot->GetRelativeLocation() + RightCarrySlot->GetRelativeLocation()) * 0.5f;
 	const FVector DesiredMidpoint = (FirstLocation + SecondLocation) * 0.5f;
-	SetActorLocation(GetActorLocation() + DesiredMidpoint - SlotMidpoint, false, nullptr, ETeleportType::TeleportPhysics);
+	DesiredTransform.SetLocation(
+		DesiredMidpoint - DesiredTransform.TransformVector(SlotMidpointLocal));
+
+	FHitResult Hit;
+	SetActorLocationAndRotation(
+		DesiredTransform.GetLocation(),
+		DesiredTransform.GetRotation(),
+		true,
+		&Hit,
+		ETeleportType::None);
+	SetHeavyCarryObstructed(Hit.bBlockingHit, Hit);
+}
+
+void AOMHeavyCarryableActor::SetHeavyCarryObstructed(bool bNewObstructed, const FHitResult& Hit)
+{
+	if (bHeavyCarryObstructed == bNewObstructed)
+	{
+		return;
+	}
+
+	bHeavyCarryObstructed = bNewObstructed;
+	UE_LOG(LogOperationMouse, Log, TEXT("[HeavyCarry][Obstruction] Target=%s State=%s Hit=%s"),
+		*GetName(), bHeavyCarryObstructed ? TEXT("Blocked") : TEXT("Clear"), *GetNameSafe(Hit.GetActor()));
 }
 
 USceneComponent* AOMHeavyCarryableActor::GetSlotForCarrierIndex(int32 CarrierIndex) const
