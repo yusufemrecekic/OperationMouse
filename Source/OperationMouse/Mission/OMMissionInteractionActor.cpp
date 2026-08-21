@@ -3,6 +3,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "OMMissionManager.h"
 #include "../OperationMouse.h"
 #include "UObject/ConstructorHelpers.h"
@@ -10,7 +11,8 @@
 AOMMissionInteractionActor::AOMMissionInteractionActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	SetReplicates(false);
+	bReplicates = true;
+	SetReplicateMovement(false);
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -75,7 +77,14 @@ void AOMMissionInteractionActor::CompleteInteraction_Implementation(AActor* Inte
 		return;
 	}
 
-	ExecuteMissionAction(Interactor);
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Request] Role=%s Interactor=%s Action=%s Target=%s"),
+		*UEnum::GetValueAsString(GetLocalRole()), *GetNameSafe(Interactor), *GetActionLabel().ToString(), *GetName());
+	const bool bAccepted = ExecuteMissionAction(Interactor);
+	if (bAccepted && MissionAction == EOMMissionInteractionAction::CompleteObjective)
+	{
+		bObjectiveConsumed = true;
+		ForceNetUpdate();
+	}
 	UpdateVisualState();
 }
 
@@ -112,6 +121,7 @@ bool AOMMissionInteractionActor::IsActionAvailable() const
 	switch (MissionAction)
 	{
 	case EOMMissionInteractionAction::CompleteObjective:
+		return !bObjectiveConsumed && MissionManager->CanExecuteAction(EOMMissionState::Active);
 	case EOMMissionInteractionAction::Fail:
 		return MissionManager->CanExecuteAction(EOMMissionState::Active);
 	case EOMMissionInteractionAction::Reset:
@@ -162,5 +172,24 @@ void AOMMissionInteractionActor::UpdateVisualState()
 
 void AOMMissionInteractionActor::HandleMissionStateChanged(EOMMissionState PreviousState, EOMMissionState NewState)
 {
+	if (HasAuthority() && MissionAction == EOMMissionInteractionAction::CompleteObjective
+		&& (NewState == EOMMissionState::Inactive || (NewState == EOMMissionState::Active && PreviousState != EOMMissionState::Active)))
+	{
+		bObjectiveConsumed = false;
+		ForceNetUpdate();
+	}
 	UpdateVisualState();
+}
+
+void AOMMissionInteractionActor::OnRep_ObjectiveConsumed()
+{
+	UpdateVisualState();
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Replication] Role=%s Target=%s ObjectiveConsumed=%s"),
+		*UEnum::GetValueAsString(GetLocalRole()), *GetName(), bObjectiveConsumed ? TEXT("true") : TEXT("false"));
+}
+
+void AOMMissionInteractionActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOMMissionInteractionActor, bObjectiveConsumed);
 }

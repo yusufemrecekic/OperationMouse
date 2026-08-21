@@ -2,10 +2,11 @@
 
 ## Scope and ownership
 
-This branch contains Yusuf's reusable Mission Base gameplay foundation. It is
-deliberately local and non-replicated: it provides deterministic gameplay
-state and test-harness behavior, but does not claim Hilmi's network authority
-or synchronization acceptance.
+This branch contains Yusuf's reusable Mission Base gameplay foundation and its
+minimum server-authoritative multiplayer integration. `AOMMissionManager`
+replicates the public Mission snapshot while clients reuse the established
+Interaction Component Server RPC. This enables ordinary Listen Server Mission
+use without claiming Hilmi's hardening or network acceptance.
 
 The foundation is intentionally independent of Level Blueprint gameplay,
 Kitchen content, Cat rescue and any one mission's art or mission script.
@@ -16,10 +17,13 @@ Kitchen content, Cat rescue and any one mission's art or mission script.
   `MissionId` and objective target. The manager also exposes safe editable
   fallbacks for the technical test harness.
 - `AOMMissionManager` owns the Mission ID, objective target/progress, public
-  state delegates and transition validation.
+  state delegates and transition validation. Its Mission ID, target, progress
+  and state are replicated with RepNotify so client presentation follows the
+  server's snapshot.
 - `AOMMissionInteractionActor` reuses `IOMInteractableInterface`; its five
   instance-configured actions are Start, Complete Objective, Fail, Reset and
-  Retry. It is a thin adapter, not a second interaction system.
+  Retry. It is a thin adapter, not a second interaction system. A consumed
+  objective fixture is replicated so duplicate requests cannot award it twice.
 
 ## Gameplay state flow
 
@@ -34,8 +38,11 @@ Failed/Completed --RetryMission--> Active
 
 `CompleteObjective` accepts only a positive progress amount while the Mission
 is Active. Start accepts only Inactive; Fail accepts only Active; Retry accepts
-only Failed or Completed. Rejected requests produce a `[Mission][Rejected]`
-log, while accepted transitions produce `[Mission][Transition]`. This keeps
+only Failed or Completed. State-changing calls reject non-authority callers;
+clients use the existing `UOMInteractionComponent::ServerBeginInteraction`
+path, where distance, line of sight, target validity and `CanInteract` are
+checked on the server. Rejected requests produce a `[Mission][Reject]` log,
+while accepted transitions produce `[Mission][State]`. This keeps
 invalid state changes visible rather than silently mutating mission state.
 
 ## Technical test harness
@@ -58,27 +65,28 @@ It supports both manual routes:
 ## Automated evidence
 
 - OperationMouseEditor Win64 Development: PASSED
-- Targeted Mission structural validation: PASSED
+- Targeted Mission replication/interaction structural validation: PASSED
 - Sprint 2 Carry regression: PASSED
 - Sprint 3 Heavy Carry regression: PASSED
 - `L_Sprint3_MissionTest` Map Check: 0 errors / 0 warnings
 
-Automated validation checks the reusable source contract, rejects Mission RPC
-or replication additions, validates map ownership/configuration and invokes
-Map Check. It does not replace manual or network evidence.
+Automated validation checks the replicated public snapshot, the absence of a
+second Mission-specific RPC path, reuse of the existing authoritative
+Interaction Component flow, duplicate-objective protection, map
+ownership/configuration and Map Check. It does not replace a manual Host/Client
+network test.
 
 ## Hilmi network handoff
 
-The future authoritative public Mission state needs, at minimum:
+The basic server-authoritative snapshot and normal client interaction request
+flow are now present. Hilmi still owns the following hardening and acceptance
+work:
 
-1. A mission identity/definition reference, `MissionState`, objective target
-   and objective progress replicated from the server. Any player-facing
-   per-objective completion state must be part of the same authoritative
-   snapshot.
-2. Server-validated requests for Start, objective completion, Fail, Reset and
-   Retry. Validation must reject an inactive/completed/failed action, duplicate
-   objective credit and ineligible interacting players.
-3. Deterministic 2/3/4-player contention rules, including simultaneous Start,
+1. Expand the snapshot when a mission has a dynamic objective list, rewards or
+   per-player visibility beyond the current Mission ID/state/target/progress.
+2. Approve and extend server validation for all production objective rules and
+   player eligibility beyond this generic test fixture.
+3. Define deterministic 2/3/4-player contention rules, including simultaneous Start,
    Complete and Reset/Retry requests. A single completion must not produce
    duplicate progress or rewards.
 4. Defined disconnect, destruction and late-state behavior. On a player loss,
@@ -90,6 +98,7 @@ The future authoritative public Mission state needs, at minimum:
 
 ## Acceptance status
 
-- `MANUAL MISSION TEST: PENDING`
-- `NETWORK MISSION TEST: PENDING`
+- `MANUAL SINGLE PLAYER TEST: PASSED`
+- `MANUAL 2-PLAYER NETWORK RETEST: PENDING`
+- `HILMI NETWORK ACCEPTANCE: PENDING`
 - `GAMEPAD MANUAL TEST: PENDING`

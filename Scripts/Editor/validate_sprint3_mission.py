@@ -30,6 +30,9 @@ def validate_source_contract():
     manager_cpp = (root / "OMMissionManager.cpp").read_text(encoding="utf-8")
     trigger_h = (root / "OMMissionInteractionActor.h").read_text(encoding="utf-8")
     trigger_cpp = (root / "OMMissionInteractionActor.cpp").read_text(encoding="utf-8")
+    interaction_root = Path(unreal.Paths.project_dir()) / "Source" / "OperationMouse" / "Interaction"
+    interaction_h = (interaction_root / "OMInteractionComponent.h").read_text(encoding="utf-8")
+    interaction_cpp = (interaction_root / "OMInteractionComponent.cpp").read_text(encoding="utf-8")
     combined = definition_h + manager_h + manager_cpp + trigger_h + trigger_cpp
     for token in (
         "UOMMissionDefinition",
@@ -45,18 +48,30 @@ def validate_source_contract():
         "FailMission",
         "ResetMission",
         "RetryMission",
-        "[Mission][Transition]",
-        "[Mission][Rejected]",
+        "[Mission][State]",
+        "[Mission][Reject]",
+        "[Mission][Request]",
+        "[Mission][Replication]",
         "AOMMissionInteractionActor",
         "IOMInteractableInterface",
-        "CompleteObjective",
-        "OMInteraction",
+        "bObjectiveConsumed",
+        "ReplicatedUsing = OnRep_MissionState",
+        "ReplicatedUsing = OnRep_ObjectiveProgress",
+        "ReplicatedUsing = OnRep_ObjectiveConsumed",
+        "DOREPLIFETIME(AOMMissionManager, MissionState)",
+        "DOREPLIFETIME(AOMMissionManager, ObjectiveProgress)",
+        "DOREPLIFETIME(AOMMissionInteractionActor, bObjectiveConsumed)",
+        "HasAuthority()",
+        "bReplicates = true",
     ):
         if token not in combined:
             fail(f"Mission foundation token missing: {token}")
-    if "UFUNCTION(Server" in combined or "DOREPLIFETIME" in combined or "ReplicatedUsing" in combined:
-        fail("Yusuf Mission foundation contains Hilmi-owned replication or RPC code")
-    unreal.log("OM_SPRINT3_MISSION_VALIDATION|PASS|YUSUF_MISSION_SOURCE_CONTRACT")
+    for token in ("ServerBeginInteraction", "IsServerInteractionValid", "Execute_BeginInteraction", "Execute_CompleteInteraction"):
+        if token not in interaction_h + interaction_cpp:
+            fail(f"Existing authoritative interaction flow token missing: {token}")
+    if "UFUNCTION(Server" in combined:
+        fail("Mission actors must reuse InteractionComponent's existing Server RPC instead of adding another RPC path")
+    unreal.log("OM_SPRINT3_MISSION_VALIDATION|PASS|MISSION_REPLICATION_AND_INTERACTION_CONTRACT")
 
 
 def validate():
@@ -116,7 +131,9 @@ def validate():
     unreal.log(
         "OM_SPRINT3_MISSION_VALIDATION|PASS|"
         "manager=1|fixtures=5|starts=2|prototype_game_mode=present|"
-        "daylight_graybox=present|map_check=executed|network_implementation=pending"
+        "daylight_graybox=present|map_check=executed|"
+        "replicated_state=present|existing_server_interaction_flow=present|"
+        "manual_network_evidence=pending"
     )
     unreal.log("OM_SPRINT3_MISSION_VALIDATION|FINAL|PASS")
 

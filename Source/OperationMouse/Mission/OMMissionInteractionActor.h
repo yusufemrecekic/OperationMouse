@@ -34,6 +34,7 @@ public:
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
 	virtual bool BeginInteraction_Implementation(AActor* Interactor) override;
 	virtual void CompleteInteraction_Implementation(AActor* Interactor) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -46,6 +47,9 @@ private:
 
 	UFUNCTION()
 	void HandleMissionStateChanged(EOMMissionState PreviousState, EOMMissionState NewState);
+
+	UFUNCTION()
+	void OnRep_ObjectiveConsumed();
 
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Mission")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -64,4 +68,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true", ClampMin = "1"))
 	int32 ObjectiveProgressAmount = 1;
+
+	/** A server-consumed objective fixture cannot award progress twice from duplicate requests. */
+	UPROPERTY(ReplicatedUsing = OnRep_ObjectiveConsumed, VisibleAnywhere, Category = "Operation Mouse|Mission")
+	bool bObjectiveConsumed = false;
 };

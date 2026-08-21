@@ -19,10 +19,7 @@ enum class EOMMissionState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOMMissionStateChanged, EOMMissionState, PreviousState, EOMMissionState, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOMMissionObjectiveProgressed, int32, NewProgress, int32, ObjectiveTarget);
 
-/**
- * Yusuf-owned reusable mission gameplay state. Networking intentionally remains
- * outside this class until the replicated mission contract is defined by Hilmi.
- */
+/** Reusable server-authoritative Mission state with a small replicated public snapshot. */
 UCLASS(Blueprintable)
 class OPERATIONMOUSE_API AOMMissionManager : public AActor
 {
@@ -59,6 +56,7 @@ public:
 	bool RetryMission(AActor* InstigatorActor = nullptr);
 
 	bool CanExecuteAction(EOMMissionState RequiredState) const;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(BlueprintAssignable, Category = "Operation Mouse|Mission")
 	FOMMissionStateChanged OnMissionStateChanged;
@@ -74,6 +72,16 @@ private:
 	bool RejectTransition(const TCHAR* Action, AActor* InstigatorActor) const;
 	void UpdateStatusText();
 	FText GetStateText() const;
+	FString GetNetworkRoleText() const;
+
+	UFUNCTION()
+	void OnRep_MissionState(EOMMissionState PreviousState);
+
+	UFUNCTION()
+	void OnRep_ObjectiveProgress();
+
+	UFUNCTION()
+	void OnRep_MissionIdentity();
 
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Mission")
 	TObjectPtr<UTextRenderComponent> StatusText;
@@ -82,15 +90,15 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UOMMissionDefinition> MissionDefinition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_MissionIdentity, EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
 	FName MissionId = TEXT("Mission_Prototype");
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true", ClampMin = "1"))
+	UPROPERTY(ReplicatedUsing = OnRep_MissionIdentity, EditAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true", ClampMin = "1"))
 	int32 ObjectiveTarget = 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_MissionState, VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
 	EOMMissionState MissionState = EOMMissionState::Inactive;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(ReplicatedUsing = OnRep_ObjectiveProgress, VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Mission", meta = (AllowPrivateAccess = "true"))
 	int32 ObjectiveProgress = 0;
 };

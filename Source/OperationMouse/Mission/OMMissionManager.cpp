@@ -2,13 +2,15 @@
 
 #include "Components/SceneComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "OMMissionDefinition.h"
 #include "../OperationMouse.h"
 
 AOMMissionManager::AOMMissionManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	SetReplicates(false);
+	bReplicates = true;
+	SetReplicateMovement(false);
 
 	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -47,6 +49,11 @@ bool AOMMissionManager::CanExecuteAction(EOMMissionState RequiredState) const
 
 bool AOMMissionManager::StartMission(AActor* InstigatorActor)
 {
+	if (!HasAuthority())
+	{
+		return RejectTransition(TEXT("StartMission.NotAuthority"), InstigatorActor);
+	}
+
 	if (!CanExecuteAction(EOMMissionState::Inactive))
 	{
 		return RejectTransition(TEXT("StartMission"), InstigatorActor);
@@ -58,6 +65,11 @@ bool AOMMissionManager::StartMission(AActor* InstigatorActor)
 
 bool AOMMissionManager::CompleteObjective(AActor* InstigatorActor, int32 ProgressAmount)
 {
+	if (!HasAuthority())
+	{
+		return RejectTransition(TEXT("CompleteObjective.NotAuthority"), InstigatorActor);
+	}
+
 	if (!CanExecuteAction(EOMMissionState::Active) || ProgressAmount <= 0)
 	{
 		return RejectTransition(TEXT("CompleteObjective"), InstigatorActor);
@@ -68,6 +80,7 @@ bool AOMMissionManager::CompleteObjective(AActor* InstigatorActor, int32 Progres
 	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Objective] Id=%s Progress=%d/%d Instigator=%s"),
 		*GetMissionId().ToString(), ObjectiveProgress, GetObjectiveTarget(), *GetNameSafe(InstigatorActor));
 	UpdateStatusText();
+	ForceNetUpdate();
 
 	return ObjectiveProgress >= GetObjectiveTarget()
 		? TransitionTo(EOMMissionState::Completed, InstigatorActor, TEXT("ObjectiveComplete"))
@@ -76,6 +89,11 @@ bool AOMMissionManager::CompleteObjective(AActor* InstigatorActor, int32 Progres
 
 bool AOMMissionManager::FailMission(AActor* InstigatorActor)
 {
+	if (!HasAuthority())
+	{
+		return RejectTransition(TEXT("FailMission.NotAuthority"), InstigatorActor);
+	}
+
 	return CanExecuteAction(EOMMissionState::Active)
 		? TransitionTo(EOMMissionState::Failed, InstigatorActor, TEXT("FailMission"))
 		: RejectTransition(TEXT("FailMission"), InstigatorActor);
@@ -83,6 +101,11 @@ bool AOMMissionManager::FailMission(AActor* InstigatorActor)
 
 bool AOMMissionManager::ResetMission(AActor* InstigatorActor)
 {
+	if (!HasAuthority())
+	{
+		return RejectTransition(TEXT("ResetMission.NotAuthority"), InstigatorActor);
+	}
+
 	if (MissionState == EOMMissionState::Inactive)
 	{
 		return RejectTransition(TEXT("ResetMission"), InstigatorActor);
@@ -94,6 +117,11 @@ bool AOMMissionManager::ResetMission(AActor* InstigatorActor)
 
 bool AOMMissionManager::RetryMission(AActor* InstigatorActor)
 {
+	if (!HasAuthority())
+	{
+		return RejectTransition(TEXT("RetryMission.NotAuthority"), InstigatorActor);
+	}
+
 	if (MissionState != EOMMissionState::Failed && MissionState != EOMMissionState::Completed)
 	{
 		return RejectTransition(TEXT("RetryMission"), InstigatorActor);
@@ -109,17 +137,46 @@ bool AOMMissionManager::TransitionTo(EOMMissionState NewState, AActor* Instigato
 	MissionState = NewState;
 	UpdateStatusText();
 	OnMissionStateChanged.Broadcast(PreviousState, NewState);
-	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Transition] Id=%s %s->%s Reason=%s Instigator=%s"),
-		*GetMissionId().ToString(), *UEnum::GetValueAsString(PreviousState), *UEnum::GetValueAsString(NewState),
-		Reason, *GetNameSafe(InstigatorActor));
+	ForceNetUpdate();
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][State] Id=%s Role=%s %s->%s Reason=%s Instigator=%s"),
+		*GetMissionId().ToString(), *GetNetworkRoleText(), *UEnum::GetValueAsString(PreviousState),
+		*UEnum::GetValueAsString(NewState), Reason, *GetNameSafe(InstigatorActor));
 	return true;
 }
 
 bool AOMMissionManager::RejectTransition(const TCHAR* Action, AActor* InstigatorActor) const
 {
-	UE_LOG(LogOperationMouse, Warning, TEXT("[Mission][Rejected] Id=%s Action=%s State=%s Instigator=%s"),
-		*GetMissionId().ToString(), Action, *UEnum::GetValueAsString(MissionState), *GetNameSafe(InstigatorActor));
+	UE_LOG(LogOperationMouse, Warning, TEXT("[Mission][Reject] Id=%s Role=%s Action=%s State=%s Instigator=%s"),
+		*GetMissionId().ToString(), *GetNetworkRoleText(), Action, *UEnum::GetValueAsString(MissionState), *GetNameSafe(InstigatorActor));
 	return false;
+}
+
+FString AOMMissionManager::GetNetworkRoleText() const
+{
+	return UEnum::GetValueAsString(GetLocalRole());
+}
+
+void AOMMissionManager::OnRep_MissionState(EOMMissionState PreviousState)
+{
+	UpdateStatusText();
+	OnMissionStateChanged.Broadcast(PreviousState, MissionState);
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Replication] Id=%s Role=%s State=%s"),
+		*GetMissionId().ToString(), *GetNetworkRoleText(), *UEnum::GetValueAsString(MissionState));
+}
+
+void AOMMissionManager::OnRep_ObjectiveProgress()
+{
+	UpdateStatusText();
+	OnObjectiveProgressed.Broadcast(ObjectiveProgress, GetObjectiveTarget());
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Replication] Id=%s Role=%s Progress=%d/%d"),
+		*GetMissionId().ToString(), *GetNetworkRoleText(), ObjectiveProgress, GetObjectiveTarget());
+}
+
+void AOMMissionManager::OnRep_MissionIdentity()
+{
+	UpdateStatusText();
+	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Replication] Id=%s Role=%s Target=%d"),
+		*GetMissionId().ToString(), *GetNetworkRoleText(), GetObjectiveTarget());
 }
 
 void AOMMissionManager::UpdateStatusText()
@@ -151,4 +208,13 @@ FText AOMMissionManager::GetStateText() const
 	default:
 		return NSLOCTEXT("OperationMouse", "MissionStateInactive", "INACTIVE");
 	}
+}
+
+void AOMMissionManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOMMissionManager, MissionId);
+	DOREPLIFETIME(AOMMissionManager, ObjectiveTarget);
+	DOREPLIFETIME(AOMMissionManager, MissionState);
+	DOREPLIFETIME(AOMMissionManager, ObjectiveProgress);
 }
