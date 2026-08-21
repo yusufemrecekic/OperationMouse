@@ -8,9 +8,9 @@ Sprint 3 Mission Gameplay Foundation
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Yusuf Mission gameplay foundation has minimum server-authoritative state replication and existing Interaction RPC integration; manual two-player retest and Hilmi network acceptance remain pending
+Current: Yusuf Mission gameplay foundation and minimum two-player Listen Server integration PASSED; Hilmi network acceptance remains pending
 
-Next: manual two-player Mission retest, then Hilmi's contention, disconnect/recovery, late-state reconciliation, 3/4-player and physical two-PC evidence; emulated latency/loss before full Mission network approval; physical gamepad evidence remains pending
+Next: Hilmi's contention, disconnect/recovery, expanded late-join recovery, 3/4-player and physical two-PC Mission evidence; emulated latency/loss before formal Mission network approval; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -86,7 +86,7 @@ Next: manual two-player Mission retest, then Hilmi's contention, disconnect/reco
 - Final Sprint 3 Heavy Carry Listen Server manual retest PASSED: Small Carry Pawn/world obstruction and holder clamp, Heavy Carry client-jitter removal, stable close-holder/jump behavior, Pawn/world obstruction, Release and Reset were verified. This closes Yusuf gameplay acceptance only; Hilmi network evidence and physical gamepad evidence remain pending.
 - Sprint 3 Mission gameplay foundation implemented without Level Blueprint gameplay: `UOMMissionDefinition`, `AOMMissionManager`, and a thin existing-interaction adapter implement guarded Inactive/Active/Completed/Failed transitions, Mission ID, objective progress, Start, Complete, Fail, Reset and Retry.
 - Dedicated `L_Sprint3_MissionTest` contains a compact daylight prototype-character harness for Start, Complete Objective, Fail, Reset and Retry. Editor build, targeted Mission validation, Sprint 2 Carry regression, Sprint 3 Heavy Carry regression and Map Check (0 errors / 0 warnings) passed. Manual Mission and Hilmi network acceptance remain pending.
-- Mission foundation now has the minimum server-authoritative multiplayer layer: replicated Mission ID/target/state/progress with RepNotify presentation, the existing `UOMInteractionComponent` Server RPC request path, authority guards on state changes and replicated objective-fixture consumption to reject duplicate completion. Manual single-player evidence PASSED; manual two-player network retest remains pending.
+- Mission foundation now has the minimum server-authoritative multiplayer layer: replicated Mission ID/target/state/progress with RepNotify presentation, the existing `UOMInteractionComponent` Server RPC request path, authority guards on state changes and replicated objective-fixture consumption to reject duplicate completion. Manual single-player and final two-player Listen Server Mission retests PASSED: Client/Server Start, Objective, Fail, Reset and Retry synchronization, duplicate blocking and READY/LOCKED presentation were verified.
 
 ## Repository
 
@@ -142,7 +142,7 @@ Branch: `feature/yusuf-mission-foundation`
 
 Main files/assets: `UOMMissionDefinition`, `AOMMissionManager`, `AOMMissionInteractionActor`, and `L_Sprint3_MissionTest`
 
-Status: YUSUF MISSION FOUNDATION + MINIMUM SERVER-AUTHORITY INTEGRATION BUILT - MANUAL SINGLE PLAYER TEST PASSED - MANUAL 2-PLAYER NETWORK RETEST PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: YUSUF MISSION FOUNDATION + MINIMUM SERVER-AUTHORITY INTEGRATION PASSED - MANUAL SINGLE PLAYER TEST PASSED - MANUAL 2-PLAYER NETWORK RETEST PASSED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

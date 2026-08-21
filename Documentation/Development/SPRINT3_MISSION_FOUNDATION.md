@@ -65,6 +65,7 @@ It supports both manual routes:
 ## Automated evidence
 
 - OperationMouseEditor Win64 Development: PASSED
+- OperationMouse Win64 Development: PASSED
 - Targeted Mission replication/interaction structural validation: PASSED
 - Sprint 2 Carry regression: PASSED
 - Sprint 3 Heavy Carry regression: PASSED
@@ -75,6 +76,20 @@ second Mission-specific RPC path, reuse of the existing authoritative
 Interaction Component flow, duplicate-objective protection, map
 ownership/configuration and Map Check. It does not replace a manual Host/Client
 network test.
+
+## Manual evidence
+
+Manual single-player Mission gameplay PASSED. The final two-player Listen
+Server Mission retest also PASSED:
+
+- Client Start, Objective, Fail, Reset and Retry all reached the server and
+  synchronized the authoritative result back to both players.
+- Server-originated actions synchronized to the Client.
+- Duplicate objective completion was blocked.
+- READY/LOCKED fixture presentation matched the replicated Mission state.
+
+This proves the minimum Host/Client Mission integration. It is not a formal
+Hilmi network acceptance or an adverse-network test.
 
 ## Hilmi network handoff
 
@@ -99,6 +114,6 @@ work:
 ## Acceptance status
 
 - `MANUAL SINGLE PLAYER TEST: PASSED`
-- `MANUAL 2-PLAYER NETWORK RETEST: PENDING`
+- `MANUAL 2-PLAYER NETWORK RETEST: PASSED`
 - `HILMI NETWORK ACCEPTANCE: PENDING`
 - `GAMEPAD MANUAL TEST: PENDING`
