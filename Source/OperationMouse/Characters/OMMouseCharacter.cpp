@@ -222,8 +222,34 @@ void AOMMouseCharacter::Move(const FInputActionValue& Value)
 	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-	AddMovementInput(ForwardDirection, MovementInput.Y);
-	AddMovementInput(RightDirection, MovementInput.X);
+	FVector ForwardInput = ForwardDirection * MovementInput.Y;
+	FVector RightInput = RightDirection * MovementInput.X;
+	if (CarryComponent)
+	{
+		ForwardInput = CarryComponent->ConstrainOwnerMovement(ForwardInput);
+		RightInput = CarryComponent->ConstrainOwnerMovement(RightInput);
+	}
+
+	AddMovementInput(ForwardInput);
+	AddMovementInput(RightInput);
+}
+
+void AOMMouseCharacter::Tick(float DeltaSeconds)
+{
+	ConstrainVelocityForCarriedCargo();
+	Super::Tick(DeltaSeconds);
+	ConstrainVelocityForCarriedCargo();
+}
+
+void AOMMouseCharacter::ConstrainVelocityForCarriedCargo()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!CarryComponent || !Movement || (!HasAuthority() && !IsLocallyControlled()))
+	{
+		return;
+	}
+
+	Movement->Velocity = CarryComponent->ConstrainOwnerMovement(Movement->Velocity);
 }
 
 void AOMMouseCharacter::Look(const FInputActionValue& Value)
@@ -333,7 +359,21 @@ void AOMMouseCharacter::StopInteraction()
 void AOMMouseCharacter::SetSprinting(bool bNewSprinting)
 {
 	bIsSprinting = bNewSprinting;
-	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : NormalWalkSpeed;
+	RefreshMaxWalkSpeed();
+}
+
+void AOMMouseCharacter::SetHeavyCarryMovementPenaltyActive(bool bActive)
+{
+	bHeavyCarryMovementPenaltyActive = bActive;
+	RefreshMaxWalkSpeed();
+}
+
+void AOMMouseCharacter::RefreshMaxWalkSpeed()
+{
+	const float BaseSpeed = bIsSprinting ? SprintSpeed : NormalWalkSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = bHeavyCarryMovementPenaltyActive
+		? BaseSpeed * HeavyCarrySpeedMultiplier
+		: BaseSpeed;
 }
 
 void AOMMouseCharacter::ServerSetSprinting_Implementation(bool bNewSprinting)

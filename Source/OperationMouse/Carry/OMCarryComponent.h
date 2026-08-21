@@ -52,6 +52,9 @@ public:
 
 	USceneComponent* GetCarryPoint() const { return CarryPoint; }
 
+	/** Shared by local prediction and authority to stop only cargo-blocked movement. */
+	FVector ConstrainOwnerMovement(const FVector& DesiredWorldMovement) const;
+
 	/** Targeted recovery hook used by a carryable before it resets to its home transform. */
 	void ReleaseForRecovery(AOMCarryableActor* Carryable);
 

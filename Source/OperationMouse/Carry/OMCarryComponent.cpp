@@ -153,7 +153,7 @@ bool UOMCarryComponent::Drop()
 	}
 
 	AOMMouseCharacter* OwnerCharacter = Cast<AOMMouseCharacter>(GetOwner());
-	if (CarriedActor->GetCurrentHolder() != OwnerCharacter)
+	if (!CarriedActor->IsHeldBy(OwnerCharacter))
 	{
 		UE_LOG(
 			LogOperationMouse,
@@ -200,6 +200,14 @@ EOMCarryState UOMCarryComponent::GetCarryState() const
 AOMCarryableActor* UOMCarryComponent::GetCarriedActor() const
 {
 	return IsCarrying() ? CarriedActor.Get() : nullptr;
+}
+
+FVector UOMCarryComponent::ConstrainOwnerMovement(const FVector& DesiredWorldMovement) const
+{
+	const AOMMouseCharacter* OwnerCharacter = Cast<AOMMouseCharacter>(GetOwner());
+	return IsValid(CarriedActor) && IsValid(OwnerCharacter)
+		? CarriedActor->ConstrainHolderMovement(OwnerCharacter, DesiredWorldMovement)
+		: DesiredWorldMovement;
 }
 
 void UOMCarryComponent::ReleaseForRecovery(AOMCarryableActor* Carryable)

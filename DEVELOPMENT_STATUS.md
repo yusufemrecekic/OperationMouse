@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Sprint 1 Gameplay Foundation / VS-Y01
+Sprint 3 Heavy Carry Gameplay Foundation
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Sprint 2 core two-player Grab / Carry / Drop, Drop/Reset synchronization and readability manually passed; controlled v5.1 closeout gate remains PARTIAL pending network edge-case evidence
+Current: Yusuf Heavy Carry gameplay foundation and final two-player Listen Server manual retest PASSED; Hilmi network acceptance remains pending
 
-Next: Hilmi contention, invalid-request logs, disconnect/critical-loot recovery, 3/4-player and physical two-PC evidence; emulated latency/loss before full network approval; physical gamepad evidence remains pending
+Next: Hilmi contention, authoritative join/leave, disconnect/critical-loot recovery, late-state reconciliation, 3/4-player and physical two-PC evidence; emulated latency/loss before full network approval; physical gamepad evidence remains pending
 
 ## Completed
 
@@ -83,6 +83,7 @@ Next: Hilmi contention, invalid-request logs, disconnect/critical-loot recovery,
 - The follow-up Client Drop/Reset desync fix replaces client-local physics restoration with a replicated authoritative Drop/Reset transform plus an incrementing world-state revision, while Unreal `ReplicatedMovement` continues server-authoritative dropped physics. Reset clears velocities and holder/carrier state before teleporting to the stored home transform. The Sprint 2 map now uses a neutral SkyAtmosphere/Directional/SkyLight setup, fixed manual exposure, a technical grid floor, no high-intensity fill-light stack, and route-aligned positive-scale labels. Editor/Game builds, Sprint 1/Sprint 2 validation and Map Check (0 errors / 0 warnings) passed; multiplayer manual acceptance remains pending.
 - Final Sprint 2 core Host + Client manual retest PASSED: Client Grab, Client Drop synchronization, Server Grab/Drop, Reset synchronization, Carry movement synchronization, lighting/readability and text readability were verified.
 - PR #12 merged into `main` at `6c6e1a7`. The controlled Production Control/Tracker v5.1 closeout audit classifies Sprint 2 as PARTIAL: normal two-player Carry is proven, while simultaneous contention, invalid-request logs, disconnect/critical-loot recovery, 3/4-player regression, physical two-PC topology and latency/loss network approval evidence remain open.
+- Final Sprint 3 Heavy Carry Listen Server manual retest PASSED: Small Carry Pawn/world obstruction and holder clamp, Heavy Carry client-jitter removal, stable close-holder/jump behavior, Pawn/world obstruction, Release and Reset were verified. This closes Yusuf gameplay acceptance only; Hilmi network evidence and physical gamepad evidence remain pending.
 
 ## Repository
 
@@ -104,6 +105,8 @@ Repository setup: Complete
 - Sprint 1 PC Button/Pickup/Door/Fail/Reset and two-minute local gameplay evidence passed; the separate physical gamepad pass remains pending.
 - Interaction RPC, authority, replication conditions, contention, and disconnect behavior are not network-owner approved until Hilmi reviews the written contract and implementation.
 - Sprint 2 Carry now has a server-authoritative replicated holder/object relationship and owning-client Drop request path. Core Host/Client synchronization passed; contention, disconnect/recovery, 3/4-player, physical two-PC and latency/loss evidence remain pending. Active-mission late join Carry state is deferred because controlled v5.1 currently rejects mission-time new joins; same-mission reconnect is V1 OUT.
+- Sprint 3 includes minimal replicated holder/state and collision consistency needed to stop owning-client prediction fighting. Hilmi still owns authoritative contention, disconnect/late-state recovery, adverse-network behavior and formal physical-network evidence.
+- Sprint 3 Yusuf gameplay acceptance passed, but it is not full multiplayer/network acceptance.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -127,15 +130,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (Gameplay complete for the tested core loop) / Hilmi Tunahan evidence and network approval pending
+Developer: Yusuf Emre (Heavy Carry gameplay foundation) / Hilmi Tunahan network implementation pending
 
-System: Sprint 2 Grab / Carry / Drop Closeout Audit
+System: Sprint 3 Heavy Carry Gameplay Foundation
 
-Branch: main (PR #12 merged); documentation closeout branch only
+Branch: `feature/yusuf-heavy-carry-foundation`
 
-Main files/assets: `UOMCarryComponent`, `AOMCarryableActor`, and `L_Sprint2_CarryTest`
+Main files/assets: `AOMHeavyCarryableActor`, reused `UOMCarryComponent`, character movement-penalty hook, and `L_Sprint3_HeavyCarryTest`
 
-Status: SPRINT 2 CORE HOST/CLIENT TEST PASSED - PRODUCTION GATE PARTIAL - NETWORK EDGE-CASE EVIDENCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: YUSUF HEAVY CARRY GAMEPLAY MANUAL RETEST PASSED - NETWORK HEAVY CARRY TEST PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

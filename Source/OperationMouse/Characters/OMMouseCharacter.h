@@ -24,10 +24,17 @@ class OPERATIONMOUSE_API AOMMouseCharacter : public ACharacter
 public:
 	AOMMouseCharacter();
 
+	/** Gameplay-only hook used by Heavy Carry. Network ownership will synchronize this state later. */
+	void SetHeavyCarryMovementPenaltyActive(bool bActive);
+
+	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Movement")
+	bool IsHeavyCarryMovementPenaltyActive() const { return bHeavyCarryMovementPenaltyActive; }
+
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_Controller() override;
 	virtual void NotifyControllerChanged() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode = 0) override;
 
 protected:
@@ -50,6 +57,8 @@ private:
 	void StartInteraction();
 	void StopInteraction();
 	void SetSprinting(bool bNewSprinting);
+	void RefreshMaxWalkSpeed();
+	void ConstrainVelocityForCarriedCargo();
 	void TryConsumeBufferedJump();
 
 	UFUNCTION(Server, Reliable)
@@ -111,6 +120,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float SprintSpeed = 900.0f;
 
+	/** Applied only while two players have activated Heavy Carry gameplay. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement", meta = (AllowPrivateAccess = "true", ClampMin = "0.1", ClampMax = "1.0"))
+	float HeavyCarrySpeedMultiplier = 0.55f;
+
 	/** How strongly built-in CharacterMovement acceleration responds to WASD while falling. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Movement|Air", meta = (AllowPrivateAccess = "true", ClampMin = "0.0", ClampMax = "1.0"))
 	float AirControlStrength = 1.0f;
@@ -127,4 +140,5 @@ private:
 	double BufferedJumpExpiration = -1.0;
 	bool bJumpInputHeld = false;
 	bool bIsSprinting = false;
+	bool bHeavyCarryMovementPenaltyActive = false;
 };

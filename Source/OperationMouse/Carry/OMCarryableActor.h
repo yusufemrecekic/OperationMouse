@@ -27,20 +27,26 @@ public:
 	virtual bool BeginInteraction_Implementation(AActor* Interactor) override;
 	virtual void CompleteInteraction_Implementation(AActor* Interactor) override;
 
-	bool BeginCarry(UOMCarryComponent* NewCarrier, USceneComponent* NewCarryPoint);
-	bool EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation);
+	virtual bool BeginCarry(UOMCarryComponent* NewCarrier, USceneComponent* NewCarryPoint);
+	virtual bool EndCarry(UOMCarryComponent* RequestingCarrier, const FVector& DropLocation);
+	virtual bool IsHeldBy(const AOMMouseCharacter* Character) const;
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
-	bool IsAvailableForGrab() const;
+	virtual bool IsAvailableForGrab() const;
 
 	UFUNCTION(BlueprintPure, Category = "Operation Mouse|Carry")
 	AOMMouseCharacter* GetCurrentHolder() const { return CurrentHolder; }
 
 	UFUNCTION(BlueprintCallable, Category = "Operation Mouse|Carry")
-	void ResetToHome();
+	virtual void ResetToHome();
+
+	/** Removes only the movement component that would drive carried cargo farther into an obstacle. */
+	virtual FVector ConstrainHolderMovement(const AOMMouseCharacter* Holder, const FVector& DesiredWorldMovement) const;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	friend class UOMCarryComponent;
@@ -52,6 +58,11 @@ private:
 	void OnRep_WorldStateRevision();
 
 	void ApplyCarryPresentation(USceneComponent* NewCarryPoint);
+	FTransform BuildCarryTargetTransform(USceneComponent* CarryPoint) const;
+	void UpdateCarriedTransform();
+	void ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder);
+	void ClearHolderCollisionIgnores();
+	void SetCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
 	void ApplyReplicatedWorldPresentation();
 	void ReconcileReplicatedPresentation();
 	void SaveWorldStateIfNeeded();
@@ -77,11 +88,32 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_WorldStateRevision)
 	uint32 WorldStateRevision = 0;
 
+	/** Server sweep normal shared with the owning client so prediction uses the same blocked direction. */
+	UPROPERTY(Replicated)
+	FVector_NetQuantizeNormal CarryObstructionNormal = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry")
 	FOMInteractionInfo InteractionInfo;
 
+	/** Minimum center distance from the holder, before per-object bounds expand it. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float MinimumCarryDistance = 180.0f;
+
+	/** Extra clearance added outside the Character capsule and carried-mesh bounds. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float CarryClearance = 20.0f;
+
+	/** Optional designer offset applied after the safe bounds-aware distance. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation")
+	FVector CarryOffset = FVector::ZeroVector;
+
 	FTransform HomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
+	TEnumAsByte<ECollisionResponse> SavedPawnCollisionResponse = ECR_Block;
 	bool bSavedSimulatePhysics = true;
 	bool bHasSavedWorldState = false;
+	bool bAddedMeshIgnoreForHolder = false;
+	bool bAddedHolderIgnoreForCargo = false;
+	bool bCarryObstructed = false;
+	TWeakObjectPtr<AOMMouseCharacter> CollisionIgnoredHolder;
 };
