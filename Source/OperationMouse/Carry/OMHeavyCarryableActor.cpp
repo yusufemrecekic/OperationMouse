@@ -100,6 +100,7 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 	{
 		FreezeAtCurrentTransform();
 		SetHeavyCarryState(EOMHeavyCarryState::WaitingForSecondHolder);
+		RefreshCarrierCollisionIgnores();
 	}
 	else
 	{
@@ -110,9 +111,9 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 			HeavyMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		}
 		UpdateHeavyCarryTransform();
+		RefreshCarrierCollisionIgnores();
 		AlignCarriersToSlots();
 	}
-	RefreshCarrierCollisionIgnores();
 
 	UE_LOG(LogOperationMouse, Log, TEXT("[HeavyCarry][Joined] Carrier=%s Target=%s Holders=%d State=%s GameplayOnly=true"),
 		*GetNameSafe(NewCarrier->GetOwner()), *GetName(), ActiveCarriers.Num(),
@@ -236,7 +237,6 @@ void AOMHeavyCarryableActor::Tick(float DeltaSeconds)
 	}
 
 	UpdateHeavyCarryTransform();
-	AlignCarriersToSlots();
 }
 
 void AOMHeavyCarryableActor::SetHeavyCarryState(EOMHeavyCarryState NewState)
@@ -273,13 +273,13 @@ void AOMHeavyCarryableActor::RefreshCarrierCollisionIgnores()
 
 		HolderCharacters.Add(Character);
 		AddCarrierCollisionIgnore(HeavyMesh, Character);
-		AddCarrierCollisionIgnore(Character->GetCapsuleComponent(), this);
+		AddCarrierMovementIgnore(Character, this);
 	}
 
 	if (HeavyCarryState == EOMHeavyCarryState::Carrying && HolderCharacters.Num() == 2)
 	{
-		AddCarrierCollisionIgnore(HolderCharacters[0]->GetCapsuleComponent(), HolderCharacters[1]);
-		AddCarrierCollisionIgnore(HolderCharacters[1]->GetCapsuleComponent(), HolderCharacters[0]);
+		AddCarrierMovementIgnore(HolderCharacters[0], HolderCharacters[1]);
+		AddCarrierMovementIgnore(HolderCharacters[1], HolderCharacters[0]);
 	}
 }
 
@@ -297,6 +297,19 @@ void AOMHeavyCarryableActor::ClearCarrierCollisionIgnores()
 	}
 	CollisionIgnoreSources.Reset();
 	CollisionIgnoreTargets.Reset();
+
+	const int32 MovementPairCount = FMath::Min(MovementIgnoreSources.Num(), MovementIgnoreTargets.Num());
+	for (int32 PairIndex = 0; PairIndex < MovementPairCount; ++PairIndex)
+	{
+		AOMMouseCharacter* SourceCharacter = MovementIgnoreSources[PairIndex].Get();
+		AActor* TargetActor = MovementIgnoreTargets[PairIndex].Get();
+		if (IsValid(SourceCharacter) && IsValid(TargetActor))
+		{
+			SourceCharacter->MoveIgnoreActorRemove(TargetActor);
+		}
+	}
+	MovementIgnoreSources.Reset();
+	MovementIgnoreTargets.Reset();
 }
 
 void AOMHeavyCarryableActor::AddCarrierCollisionIgnore(UPrimitiveComponent* SourceComponent, AActor* TargetActor)
@@ -310,6 +323,20 @@ void AOMHeavyCarryableActor::AddCarrierCollisionIgnore(UPrimitiveComponent* Sour
 	SourceComponent->IgnoreActorWhenMoving(TargetActor, true);
 	CollisionIgnoreSources.Add(SourceComponent);
 	CollisionIgnoreTargets.Add(TargetActor);
+}
+
+void AOMHeavyCarryableActor::AddCarrierMovementIgnore(AOMMouseCharacter* SourceCharacter, AActor* TargetActor)
+{
+	UCapsuleComponent* Capsule = IsValid(SourceCharacter) ? SourceCharacter->GetCapsuleComponent() : nullptr;
+	if (!IsValid(Capsule) || !IsValid(TargetActor)
+		|| Capsule->GetMoveIgnoreActors().Contains(TargetActor))
+	{
+		return;
+	}
+
+	SourceCharacter->MoveIgnoreActorAdd(TargetActor);
+	MovementIgnoreSources.Add(SourceCharacter);
+	MovementIgnoreTargets.Add(TargetActor);
 }
 
 void AOMHeavyCarryableActor::AlignCarriersToSlots()

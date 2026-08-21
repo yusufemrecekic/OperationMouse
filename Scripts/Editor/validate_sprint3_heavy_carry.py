@@ -35,6 +35,8 @@ def validate_source_contract():
         "RefreshCarrierCollisionIgnores",
         "IgnoreActorWhenMoving",
         "GetMoveIgnoreActors",
+        "MoveIgnoreActorAdd",
+        "MoveIgnoreActorRemove",
         "EOMHeavyCarryState::Carrying",
         "ActiveCarriers.Num() >= 2",
         "SetMovementPenaltyForAllHolders(true)",
@@ -46,10 +48,15 @@ def validate_source_contract():
     for token in required:
         if token not in combined:
             fail(f"Heavy Carry gameplay token missing: {token}")
+    if heavy_cpp.count("AlignCarriersToSlots();") != 1:
+        fail("Heavy Carry holder alignment must run once on join, not force-move holders every Tick")
     if "SetHeavyCarryMovementPenaltyActive" not in character_cpp:
         fail("Character movement-penalty gameplay hook is missing")
-    if "FVector(160.0f, 0.0f, 35.0f)" not in character_cpp:
-        fail("Normal CarryPoint does not keep the object safely in front of the capsule")
+    carryable_h = (root / "Carry" / "OMCarryableActor.h").read_text(encoding="utf-8")
+    carryable_cpp = (root / "Carry" / "OMCarryableActor.cpp").read_text(encoding="utf-8")
+    for token in ("MinimumCarryDistance", "CarryClearance", "Mesh->Bounds.SphereRadius"):
+        if token not in carryable_h + carryable_cpp:
+            fail(f"Bounds-aware normal Carry placement token missing: {token}")
     if "UFUNCTION(Server" in heavy_h or "DOREPLIFETIME" in heavy_cpp or "ReplicatedUsing" in heavy_h:
         fail("Yusuf Heavy Carry files contain Hilmi-owned network implementation")
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|YUSUF_GAMEPLAY_SOURCE_CONTRACT")

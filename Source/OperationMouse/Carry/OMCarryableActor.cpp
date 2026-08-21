@@ -1,6 +1,7 @@
 #include "OMCarryableActor.h"
 
 #include "OMCarryComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -205,10 +206,26 @@ void AOMCarryableActor::ApplyCarryPresentation(USceneComponent* NewCarryPoint)
 	}
 
 	SaveWorldStateIfNeeded();
+
+	FVector SafeRelativeOffset = CarryOffset;
+	if (const AOMMouseCharacter* Holder = Cast<AOMMouseCharacter>(NewCarryPoint->GetOwner()))
+	{
+		const UCapsuleComponent* Capsule = Holder->GetCapsuleComponent();
+		const float CapsuleRadius = IsValid(Capsule) ? Capsule->GetScaledCapsuleRadius() : 0.0f;
+		const float ObjectRadius = Mesh->Bounds.SphereRadius;
+		const float SafeCenterDistance = FMath::Max(
+			MinimumCarryDistance,
+			CapsuleRadius + ObjectRadius + CarryClearance);
+		const float CarryPointForwardDistance = FVector::DotProduct(
+			NewCarryPoint->GetComponentLocation() - Holder->GetActorLocation(),
+			Holder->GetActorForwardVector());
+		SafeRelativeOffset.X += SafeCenterDistance - CarryPointForwardDistance;
+	}
+
 	Mesh->SetSimulatePhysics(false);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	AttachToComponent(NewCarryPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	SetActorRelativeLocation(FVector::ZeroVector);
+	SetActorRelativeLocation(SafeRelativeOffset);
 	SetActorRelativeRotation(FRotator::ZeroRotator);
 	UpdateStatusText();
 }

@@ -57,6 +57,7 @@ private:
 	void RefreshCarrierCollisionIgnores();
 	void ClearCarrierCollisionIgnores();
 	void AddCarrierCollisionIgnore(UPrimitiveComponent* SourceComponent, AActor* TargetActor);
+	void AddCarrierMovementIgnore(AOMMouseCharacter* SourceCharacter, AActor* TargetActor);
 	void FreezeAtCurrentTransform();
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
 	void UpdateHeavyCarryTransform();
@@ -87,4 +88,6 @@ private:
 	/** Only pair-specific ignores added by Heavy Carry; cleared on release/reset. */
 	TArray<TWeakObjectPtr<UPrimitiveComponent>> CollisionIgnoreSources;
 	TArray<TWeakObjectPtr<AActor>> CollisionIgnoreTargets;
+	TArray<TWeakObjectPtr<AOMMouseCharacter>> MovementIgnoreSources;
+	TArray<TWeakObjectPtr<AActor>> MovementIgnoreTargets;
 };

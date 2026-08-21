@@ -81,6 +81,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry")
 	FOMInteractionInfo InteractionInfo;
 
+	/** Minimum center distance from the holder, before per-object bounds expand it. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float MinimumCarryDistance = 180.0f;
+
+	/** Extra clearance added outside the Character capsule and carried-mesh bounds. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float CarryClearance = 20.0f;
+
+	/** Optional designer offset applied after the safe bounds-aware distance. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation")
+	FVector CarryOffset = FVector::ZeroVector;
+
 	FTransform HomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
 	bool bSavedSimulatePhysics = true;
