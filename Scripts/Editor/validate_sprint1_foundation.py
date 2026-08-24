@@ -1,5 +1,7 @@
 """Read-only Sprint 1 asset and interaction harness validation."""
 
+from pathlib import Path
+
 import unreal
 
 
@@ -163,8 +165,31 @@ def validate_harness():
 
     character_class = unreal.load_class(None, "/Script/OperationMouse.OMMouseCharacter")
     character_cdo = unreal.get_default_object(character_class)
-    if character_cdo.get_editor_property("interaction_component") is None:
+    interaction_component = character_cdo.get_editor_property("interaction_component")
+    if interaction_component is None:
         fail("AOMMouseCharacter has no InteractionComponent")
+    origin_fraction = interaction_component.get_editor_property(
+        "interaction_origin_height_fraction"
+    )
+    if origin_fraction <= 0.0 or origin_fraction > 1.0:
+        fail(f"Invalid scale-aware interaction origin fraction: {origin_fraction}")
+
+    interaction_cpp = (
+        Path(unreal.Paths.project_dir())
+        / "Source"
+        / "OperationMouse"
+        / "Interaction"
+        / "OMInteractionComponent.cpp"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "GetInteractionTraceOrigin",
+        "GetScaledCapsuleHalfHeight",
+        "InteractionOriginHeightFraction",
+    ):
+        if token not in interaction_cpp:
+            fail(f"Scale-aware interaction origin token missing: {token}")
+    if "FVector::UpVector * 50.0f" in interaction_cpp:
+        fail("Interaction focus or server validation still uses the absolute +50 origin")
 
     unreal.log(
         f"OM_SPRINT1_VALIDATION|PASS|HARNESS|roles={sorted(roles)}|"

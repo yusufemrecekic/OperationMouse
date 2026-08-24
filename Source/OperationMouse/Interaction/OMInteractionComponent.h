@@ -33,6 +33,7 @@ private:
 	void FindLocalFocus();
 	void EnsurePromptWidget();
 	void RefreshPrompt();
+	FVector GetInteractionTraceOrigin() const;
 	bool IsServerInteractionValid(AActor* Target, bool bCheckInteractableState, FString* OutFailureReason = nullptr) const;
 	bool IsCharacterStateValid() const;
 	void CancelActiveInteraction();
@@ -75,6 +76,13 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Detection", meta = (ClampMin = "1.0"))
 	float DetectionRadius = 35.0f;
+
+	/**
+	 * Fraction of the current scaled capsule half-height used by local focus and server line-of-sight checks.
+	 * The 50/88 default preserves the accepted legacy +50-UU origin on today's 88-UU capsule while remaining tunable for the production mouse.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Interaction|Detection", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float InteractionOriginHeightFraction = 50.0f / 88.0f;
 
 	/** Absolute server-side cap even if an interactable advertises a larger range. */
 	UPROPERTY(EditAnywhere, Category = "Interaction|Validation", meta = (ClampMin = "1.0"))

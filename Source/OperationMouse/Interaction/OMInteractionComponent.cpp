@@ -3,6 +3,7 @@
 #include "OMInteractableInterface.h"
 #include "OMInteractionPromptWidget.h"
 #include "../OperationMouse.h"
+#include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -114,7 +115,7 @@ void UOMInteractionComponent::FindLocalFocus()
 	const UWorld* World = GetWorld();
 	if (PlayerController && World && IsCharacterStateValid())
 	{
-		const FVector TraceStart = OwnerCharacter->GetActorLocation() + FVector::UpVector * 50.0f;
+		const FVector TraceStart = GetInteractionTraceOrigin();
 		const FVector TraceDirection = PlayerController->GetControlRotation().Vector();
 		const FVector TraceEnd = TraceStart + TraceDirection * DetectionDistance;
 
@@ -145,6 +146,19 @@ void UOMInteractionComponent::FindLocalFocus()
 	}
 
 	FocusedActor = NewFocus;
+}
+
+FVector UOMInteractionComponent::GetInteractionTraceOrigin() const
+{
+	if (!OwnerCharacter)
+	{
+		return FVector::ZeroVector;
+	}
+
+	const UCapsuleComponent* Capsule = OwnerCharacter->GetCapsuleComponent();
+	const float CapsuleHalfHeight = IsValid(Capsule) ? Capsule->GetScaledCapsuleHalfHeight() : 0.0f;
+	return OwnerCharacter->GetActorLocation()
+		+ OwnerCharacter->GetActorUpVector() * CapsuleHalfHeight * InteractionOriginHeightFraction;
 }
 
 void UOMInteractionComponent::EnsurePromptWidget()
@@ -239,7 +253,7 @@ bool UOMInteractionComponent::IsServerInteractionValid(AActor* Target, bool bChe
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OMInteractionValidation), false, OwnerCharacter);
 	const bool bBlocked = GetWorld()->LineTraceSingleByChannel(
 		SightHit,
-		OwnerCharacter->GetActorLocation() + FVector::UpVector * 50.0f,
+		GetInteractionTraceOrigin(),
 		InteractionPoint,
 		ECC_Visibility,
 		QueryParams);

@@ -67,6 +67,7 @@ private:
 	TArray<AOMMouseCharacter*> GetPresentationHolders() const;
 	void UpdateHeavyStatusText();
 	bool RemoveInvalidCarriers();
+	float GetMinimumStableHolderSeparation() const;
 	USceneComponent* GetSlotForCarrierIndex(int32 CarrierIndex) const;
 
 	UFUNCTION()
@@ -79,6 +80,10 @@ private:
 	/** Second gameplay holder aligns its CarryPoint to the opposite side. */
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
 	TObjectPtr<USceneComponent> RightCarrySlot;
+
+	/** Extra holder-to-holder safety margin beyond the scale-aware slot separation. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Heavy Carry", meta = (ClampMin = "0.0"))
+	float HolderSeparationSafetyMargin = 10.0f;
 
 	/** Server-only gameplay components. Network clients receive only actor/state presentation below. */
 	UPROPERTY(Transient, VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
