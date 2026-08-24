@@ -2,15 +2,15 @@
 
 ## Current Milestone
 
-Sprint 3 Mission Gameplay Foundation
+Mouse Scale Calibration
 
 ## Milestone Progress
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Yusuf Mission gameplay foundation and minimum two-player Listen Server integration PASSED; Hilmi network acceptance remains pending
+Current: Test-only Candidate A calibration player and `L_ScaleCalibration` technical harness implemented; automated structural validation and Map Check PASSED; manual scale review pending
 
-Next: Hilmi's contention, disconnect/recovery, expanded late-join recovery, 3/4-player and physical two-PC Mission evidence; emulated latency/loss before formal Mission network approval; physical gamepad evidence remains pending
+Next: Ali/Yusuf visual and mechanical review of Candidate A before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
 
 ## Completed
 
@@ -89,6 +89,8 @@ Next: Hilmi's contention, disconnect/recovery, expanded late-join recovery, 3/4-
 - Mission foundation now has the minimum server-authoritative multiplayer layer: replicated Mission ID/target/state/progress with RepNotify presentation, the existing `UOMInteractionComponent` Server RPC request path, authority guards on state changes and replicated objective-fixture consumption to reject duplicate completion. Manual single-player and final two-player Listen Server Mission retests PASSED: Client/Server Start, Objective, Fail, Reset and Retry synchronization, duplicate blocking and READY/LOCKED presentation were verified.
 - Scale-readiness foundation now derives the shared local/server interaction trace origin from the current scaled Character capsule, calculates Heavy Carry holder separation from real world-space slot positions, and exposes the existing 10-UU holder safety margin without changing its default. Existing movement, camera, jump, mantle, interaction ranges, Carry clearance/drop offsets, capsule and crouch settings remain independently tunable through Character/component or Blueprint defaults; no global scale multiplier was introduced. Editor/Game Development builds and Sprint 1 Interaction, Sprint 2 Carry, Sprint 3 Heavy Carry and Mission automated validations passed with Map Check reporting 0 errors / 0 warnings. Current-scale manual Interaction/Heavy Carry regression remains pending.
 - Carry networking/presentation closeout manual acceptance PASSED in two-player Listen Server testing: both Heavy Carry final-holder release orders reconcile to the server-owned world state, and Normal Carry's collisionless client visual now follows the rendered local Carry target without the previous owning-client lag/rubber-band while gameplay transform, sweep, collision, obstruction and Drop authority remain server-owned.
+- Test-only Scale Calibration Candidate A derives from the modular prototype Character with an 11-uu capsule radius, 24-uu capsule half-height, 0.25 visual scale, -24-uu mesh floor alignment and approximately 45.12-uu rendered height; no production gameplay tuning changed.
+- Dedicated `/Game/OperationMouse/Tests/Scale/L_ScaleCalibration` contains nine labeled technical zones for human references, passage widths, ledges/mantle, safe gaps, camera/clearance, real Interaction, real Normal Carry, real Heavy Carry and two-player spacing. Targeted structural validation PASSED and Map Check reported 0 errors / 0 warnings; manual scale review remains pending.
 
 ## Repository
 
@@ -137,15 +139,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Ali / Yusuf / Hilmi scale-calibration ownership; Hilmi formal network acceptance remains pending
+Developer: Ali / Yusuf scale-calibration review; Hilmi formal network acceptance remains pending
 
 System: Mouse Scale Calibration
 
-Branch: NOT CREATED
+Branch: `feature/yusuf-scale-calibration`
 
-Main files: to be selected from latest `main` after Carry closeout
+Main files: `/Game/OperationMouse/Tests/Scale/`, `Scripts/Editor/configure_scale_calibration.py`, `Scripts/Editor/validate_scale_calibration.py`
 
-Status: CARRY NETWORKING/PRESENTATION MANUAL ACCEPTANCE PASSED - SCALE CALIBRATION READY BUT NOT STARTED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: SCALE CALIBRATION HARNESS AUTOMATED VALIDATION PASSED - MANUAL SCALE REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
