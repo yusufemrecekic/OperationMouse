@@ -51,7 +51,11 @@ def validate_source_contract():
         "SetMovementPenaltyForAllHolders(true)",
         "SetMovementPenaltyForAllHolders(false)",
         "ReleaseForRecovery(this)",
-        "RestoreWorldPresentation(HeavyHomeTransform)",
+        "PublishAuthoritativeWorldPresentation(HeavyHomeTransform)",
+        "FOMHeavyCarryWorldState",
+        "OnRep_HeavyCarryWorldState",
+        "AppliedHeavyWorldStateRevision",
+        "WakeAllRigidBodies",
     )
     combined = heavy_h + heavy_cpp
     for token in required:
@@ -81,6 +85,7 @@ def validate_source_contract():
         "DOREPLIFETIME(AOMHeavyCarryableActor, HeavyCarryState)",
         "DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedFirstHolder)",
         "DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedSecondHolder)",
+        "DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedHeavyWorldState)",
         "ApplyReplicatedCarryPresentation",
     ):
         if token not in combined:
