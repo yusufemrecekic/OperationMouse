@@ -87,6 +87,7 @@ Next: Hilmi's contention, disconnect/recovery, expanded late-join recovery, 3/4-
 - Sprint 3 Mission gameplay foundation implemented without Level Blueprint gameplay: `UOMMissionDefinition`, `AOMMissionManager`, and a thin existing-interaction adapter implement guarded Inactive/Active/Completed/Failed transitions, Mission ID, objective progress, Start, Complete, Fail, Reset and Retry.
 - Dedicated `L_Sprint3_MissionTest` contains a compact daylight prototype-character harness for Start, Complete Objective, Fail, Reset and Retry. Editor build, targeted Mission validation, Sprint 2 Carry regression, Sprint 3 Heavy Carry regression and Map Check (0 errors / 0 warnings) passed. Manual Mission and Hilmi network acceptance remain pending.
 - Mission foundation now has the minimum server-authoritative multiplayer layer: replicated Mission ID/target/state/progress with RepNotify presentation, the existing `UOMInteractionComponent` Server RPC request path, authority guards on state changes and replicated objective-fixture consumption to reject duplicate completion. Manual single-player and final two-player Listen Server Mission retests PASSED: Client/Server Start, Objective, Fail, Reset and Retry synchronization, duplicate blocking and READY/LOCKED presentation were verified.
+- Scale-readiness foundation now derives the shared local/server interaction trace origin from the current scaled Character capsule, calculates Heavy Carry holder separation from real world-space slot positions, and exposes the existing 10-UU holder safety margin without changing its default. Existing movement, camera, jump, mantle, interaction ranges, Carry clearance/drop offsets, capsule and crouch settings remain independently tunable through Character/component or Blueprint defaults; no global scale multiplier was introduced. Editor/Game Development builds and Sprint 1 Interaction, Sprint 2 Carry, Sprint 3 Heavy Carry and Mission automated validations passed with Map Check reporting 0 errors / 0 warnings. Current-scale manual Interaction/Heavy Carry regression remains pending.
 
 ## Repository
 
@@ -134,15 +135,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (Mission gameplay foundation) / Hilmi Tunahan network implementation pending
+Developer: Yusuf Emre (scale-readiness gameplay foundation) / Hilmi Tunahan network acceptance remains pending
 
-System: Sprint 3 Mission Gameplay Foundation
+System: Mouse Scale Calibration Readiness
 
-Branch: `feature/yusuf-mission-foundation`
+Branch: `feature/yusuf-scale-readiness`
 
-Main files/assets: `UOMMissionDefinition`, `AOMMissionManager`, `AOMMissionInteractionActor`, and `L_Sprint3_MissionTest`
+Main files: `UOMInteractionComponent`, `AOMHeavyCarryableActor`, `AOMMouseCharacter`, and targeted validation scripts
 
-Status: YUSUF MISSION FOUNDATION + MINIMUM SERVER-AUTHORITY INTEGRATION PASSED - MANUAL SINGLE PLAYER TEST PASSED - MANUAL 2-PLAYER NETWORK RETEST PASSED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: AUTOMATED SCALE-READINESS VALIDATION PASSED - MANUAL CURRENT-SCALE INTERACTION/HEAVY CARRY REGRESSION REQUIRED - SCALE CALIBRATION NOT STARTED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

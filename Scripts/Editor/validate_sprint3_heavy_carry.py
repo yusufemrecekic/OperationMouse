@@ -41,6 +41,9 @@ def validate_source_contract():
 		"ConstrainHolderMovement",
 		"HeavyObstructionNormal",
 		"MinimumStableSeparation",
+		"GetMinimumStableHolderSeparation",
+		"GetComponentLocation",
+		"HolderSeparationSafetyMargin",
 		"SetActorLocationAndRotation",
 		"ECollisionEnabled::QueryOnly",
         "EOMHeavyCarryState::Carrying",
@@ -84,6 +87,8 @@ def validate_source_contract():
             fail(f"Heavy Carry collision-consistency token missing: {token}")
     if "UFUNCTION(Server" in heavy_h or "NetMulticast" in combined:
         fail("Heavy Carry added a custom movement RPC instead of replicated collision consistency")
+    if "GetRelativeLocation() - RightCarrySlot->GetRelativeLocation()" in heavy_cpp:
+        fail("Heavy Carry separation still ignores component/actor world scale")
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|PASS|GAMEPLAY_AND_COLLISION_CONSISTENCY_SOURCE_CONTRACT")
 
 

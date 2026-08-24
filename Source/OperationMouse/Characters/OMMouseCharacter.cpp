@@ -117,6 +117,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 void AOMMouseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	GetCharacterMovement()->AirControl = AirControlStrength;
 	if (CarryComponent)
 	{
 		CarryComponent->SetCarryPoint(CarryPoint);

@@ -570,8 +570,7 @@ void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
 	const FVector FirstLocation = FirstPoint->GetComponentLocation();
 	const FVector SecondLocation = SecondPoint->GetComponentLocation();
 	const FVector HolderSeparation = SecondLocation - FirstLocation;
-	const float MinimumStableSeparation =
-		(LeftCarrySlot->GetRelativeLocation() - RightCarrySlot->GetRelativeLocation()).Size2D() * 0.5f;
+	const float MinimumStableSeparation = GetMinimumStableHolderSeparation();
 	if (HolderSeparation.Size2D() < MinimumStableSeparation)
 	{
 		SetHeavyCarryObstructed(true, FHitResult());
@@ -666,9 +665,8 @@ FVector AOMHeavyCarryableActor::ConstrainHolderMovement(
 
 	FVector TowardOther = OtherHolder->GetActorLocation() - Holder->GetActorLocation();
 	TowardOther.Z = 0.0f;
-	const float MinimumStableSeparation =
-		(LeftCarrySlot->GetRelativeLocation() - RightCarrySlot->GetRelativeLocation()).Size2D() * 0.5f;
-	if (TowardOther.Size2D() <= MinimumStableSeparation + 10.0f)
+	const float MinimumStableSeparation = GetMinimumStableHolderSeparation();
+	if (TowardOther.Size2D() <= MinimumStableSeparation + HolderSeparationSafetyMargin)
 	{
 		TowardOther.Normalize();
 		const float MovementTowardOther = FVector::DotProduct(ConstrainedMovement, TowardOther);
@@ -679,6 +677,18 @@ FVector AOMHeavyCarryableActor::ConstrainHolderMovement(
 	}
 
 	return ConstrainedMovement;
+}
+
+float AOMHeavyCarryableActor::GetMinimumStableHolderSeparation() const
+{
+	if (!IsValid(LeftCarrySlot) || !IsValid(RightCarrySlot))
+	{
+		return 0.0f;
+	}
+
+	const FVector WorldSlotSeparation =
+		LeftCarrySlot->GetComponentLocation() - RightCarrySlot->GetComponentLocation();
+	return WorldSlotSeparation.Size2D() * 0.5f;
 }
 
 USceneComponent* AOMHeavyCarryableActor::GetSlotForCarrierIndex(int32 CarrierIndex) const
