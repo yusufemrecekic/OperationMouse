@@ -60,10 +60,11 @@ private:
 
 	void ApplyCarryPresentation(USceneComponent* NewCarryPoint);
 	FTransform BuildCarryTargetTransform(USceneComponent* CarryPoint) const;
+	FTransform BuildClientPresentationTransform(USceneComponent* CarryPoint) const;
 	void UpdateCarriedTransform();
 	void InitializeClientVisualMesh();
 	void ActivateClientCarryPresentation(USceneComponent* CarryPoint);
-	void UpdateClientCarryPresentation(float DeltaSeconds);
+	void UpdateClientCarryPresentation();
 	void DeactivateClientCarryPresentation();
 	void ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder);
 	void ClearHolderCollisionIgnores();
@@ -116,15 +117,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation")
 	FVector CarryOffset = FVector::ZeroVector;
 
-	/** Non-authoritative visual interpolation speed; later mouse-scale calibration may tune this value. */
-	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
-	float ClientVisualSmoothingSpeed = 24.0f;
-
-	/** Maximum client-only visual lead from the replicated collision actor. */
-	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
-	float ClientVisualMaxOffset = 45.0f;
-
-	/** Distance at which a genuine authoritative correction immediately wins over interpolation. */
+	/** Maximum presentation divergence before the authoritative collision actor wins as a safety reconciliation. */
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
 	float ClientVisualHardCorrectionDistance = 120.0f;
 

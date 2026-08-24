@@ -75,7 +75,7 @@ void AOMCarryableActor::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	if (!HasAuthority())
 	{
-		UpdateClientCarryPresentation(DeltaSeconds);
+		UpdateClientCarryPresentation();
 		return;
 	}
 
@@ -325,6 +325,28 @@ FTransform AOMCarryableActor::BuildCarryTargetTransform(USceneComponent* CarryPo
 	return TargetTransform;
 }
 
+FTransform AOMCarryableActor::BuildClientPresentationTransform(USceneComponent* CarryPoint) const
+{
+	const FTransform LocalTarget = BuildCarryTargetTransform(CarryPoint);
+	const FTransform AuthoritativeTransform = GetActorTransform();
+	FVector VisualOffset = LocalTarget.GetLocation() - AuthoritativeTransform.GetLocation();
+	const FVector ObstructionNormal = FVector(CarryObstructionNormal).GetSafeNormal();
+	if (!ObstructionNormal.IsNearlyZero() && FVector::DotProduct(VisualOffset, ObstructionNormal) < 0.0f)
+	{
+		// Preserve tangential and outward presentation motion while preventing visual travel into the server obstruction.
+		VisualOffset = FVector::VectorPlaneProject(VisualOffset, ObstructionNormal);
+	}
+
+	if (VisualOffset.SizeSquared() > FMath::Square(ClientVisualHardCorrectionDistance))
+	{
+		return AuthoritativeTransform;
+	}
+
+	FTransform PresentationTransform = LocalTarget;
+	PresentationTransform.SetLocation(AuthoritativeTransform.GetLocation() + VisualOffset);
+	return PresentationTransform;
+}
+
 void AOMCarryableActor::UpdateCarriedTransform()
 {
 	if (!HasAuthority() || !IsValid(CurrentHolder) || !Mesh)
@@ -380,7 +402,6 @@ void AOMCarryableActor::ActivateClientCarryPresentation(USceneComponent* CarryPo
 		bAuthoritativeMeshWasVisible = Mesh->IsVisible();
 		bAuthoritativeMeshWasHiddenInGame = Mesh->bHiddenInGame;
 		ClientCarryStartWorldStateRevision = WorldStateRevision;
-		ClientVisualMesh->SetWorldLocationAndRotation(Mesh->GetComponentLocation(), Mesh->GetComponentQuat());
 		bClientCarryPresentationActive = true;
 	}
 
@@ -399,6 +420,10 @@ void AOMCarryableActor::ActivateClientCarryPresentation(USceneComponent* CarryPo
 		}
 	}
 
+	const FTransform PresentationTransform = BuildClientPresentationTransform(CarryPoint);
+	ClientVisualMesh->SetWorldLocationAndRotation(
+		PresentationTransform.GetLocation(),
+		PresentationTransform.GetRotation());
 	Mesh->SetVisibility(false, false);
 	Mesh->SetHiddenInGame(true, false);
 	ClientVisualMesh->SetVisibility(true);
@@ -406,7 +431,7 @@ void AOMCarryableActor::ActivateClientCarryPresentation(USceneComponent* CarryPo
 	SetActorTickEnabled(true);
 }
 
-void AOMCarryableActor::UpdateClientCarryPresentation(float DeltaSeconds)
+void AOMCarryableActor::UpdateClientCarryPresentation()
 {
 	if (!bClientCarryPresentationActive || !ClientVisualMesh || !IsValid(CurrentHolder))
 	{
@@ -420,29 +445,10 @@ void AOMCarryableActor::UpdateClientCarryPresentation(float DeltaSeconds)
 		return;
 	}
 
-	const FTransform LocalTarget = BuildCarryTargetTransform(CarryPoint);
-	const FVector AuthoritativeLocation = GetActorLocation();
-	FVector VisualOffset = LocalTarget.GetLocation() - AuthoritativeLocation;
-	const FVector ObstructionNormal = FVector(CarryObstructionNormal).GetSafeNormal();
-	if (!ObstructionNormal.IsNearlyZero() && FVector::DotProduct(VisualOffset, ObstructionNormal) < 0.0f)
-	{
-		VisualOffset = FVector::VectorPlaneProject(VisualOffset, ObstructionNormal);
-	}
-	VisualOffset = VisualOffset.GetClampedToMaxSize(ClientVisualMaxOffset);
-	const FVector VisualTargetLocation = AuthoritativeLocation + VisualOffset;
-
-	FVector CurrentVisualLocation = ClientVisualMesh->GetComponentLocation();
-	FQuat CurrentVisualRotation = ClientVisualMesh->GetComponentQuat();
-	if (FVector::DistSquared(CurrentVisualLocation, AuthoritativeLocation)
-		> FMath::Square(ClientVisualHardCorrectionDistance))
-	{
-		CurrentVisualLocation = AuthoritativeLocation;
-		CurrentVisualRotation = GetActorQuat();
-	}
-
+	const FTransform PresentationTransform = BuildClientPresentationTransform(CarryPoint);
 	ClientVisualMesh->SetWorldLocationAndRotation(
-		FMath::VInterpTo(CurrentVisualLocation, VisualTargetLocation, DeltaSeconds, ClientVisualSmoothingSpeed),
-		FMath::QInterpTo(CurrentVisualRotation, LocalTarget.GetRotation(), DeltaSeconds, ClientVisualSmoothingSpeed));
+		PresentationTransform.GetLocation(),
+		PresentationTransform.GetRotation());
 }
 
 void AOMCarryableActor::DeactivateClientCarryPresentation()
