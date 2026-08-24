@@ -30,6 +30,12 @@ void AOMHeavyCarryableActor::BeginPlay()
 	Super::BeginPlay();
 	HeavyHomeTransform = GetActorTransform();
 	CacheHeavyPresentationIfNeeded();
+	if (HasAuthority())
+	{
+		ReplicatedHeavyWorldState.Transform = HeavyHomeTransform;
+		ReplicatedHeavyWorldState.Revision = 1;
+		ReplicatedHeavyWorldState.bSimulatePhysics = bSavedHeavySimulatePhysics;
+	}
 	UpdateHeavyStatusText();
 }
 
@@ -151,7 +157,7 @@ bool AOMHeavyCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, cons
 		FTransform DropTransform = GetActorTransform();
 		DropTransform.SetLocation(DropLocation);
 		DropTransform.SetRotation(FQuat::Identity);
-		RestoreWorldPresentation(DropTransform);
+		PublishAuthoritativeWorldPresentation(DropTransform);
 		SetHeavyCarryState(EOMHeavyCarryState::Idle);
 	}
 
@@ -207,7 +213,7 @@ void AOMHeavyCarryableActor::ResetToHome()
 		}
 	}
 	ActiveCarriers.Reset();
-	RestoreWorldPresentation(HeavyHomeTransform);
+	PublishAuthoritativeWorldPresentation(HeavyHomeTransform);
 	SetHeavyCarryState(EOMHeavyCarryState::Idle);
 	SyncReplicatedCarryState();
 	UE_LOG(LogOperationMouse, Log, TEXT("[HeavyCarry][Reset] Target=%s Holders=0 GameplayOnly=true"), *GetName());
@@ -231,7 +237,7 @@ void AOMHeavyCarryableActor::Tick(float DeltaSeconds)
 	{
 		if (ActiveCarriers.IsEmpty())
 		{
-			RestoreWorldPresentation(GetActorTransform());
+			PublishAuthoritativeWorldPresentation(GetActorTransform());
 			SetHeavyCarryState(EOMHeavyCarryState::Idle);
 		}
 		else if (bRemovedInvalidCarrier)
@@ -255,7 +261,7 @@ void AOMHeavyCarryableActor::Tick(float DeltaSeconds)
 		}
 		else
 		{
-			RestoreWorldPresentation(GetActorTransform());
+			PublishAuthoritativeWorldPresentation(GetActorTransform());
 			SetHeavyCarryState(EOMHeavyCarryState::Idle);
 		}
 		return;
@@ -485,6 +491,11 @@ void AOMHeavyCarryableActor::OnRep_HeavyCarryNetworkState()
 	ApplyReplicatedCarryPresentation();
 }
 
+void AOMHeavyCarryableActor::OnRep_HeavyCarryWorldState()
+{
+	ApplyReplicatedCarryPresentation();
+}
+
 void AOMHeavyCarryableActor::ApplyReplicatedCarryPresentation()
 {
 	UStaticMeshComponent* HeavyMesh = FindComponentByClass<UStaticMeshComponent>();
@@ -498,14 +509,7 @@ void AOMHeavyCarryableActor::ApplyReplicatedCarryPresentation()
 
 	if (HeavyCarryState == EOMHeavyCarryState::Idle)
 	{
-		if (bHeavyPresentationSaved)
-		{
-			HeavyMesh->SetSimulatePhysics(false);
-			HeavyMesh->SetCollisionEnabled(SavedHeavyCollision);
-			HeavyMesh->SetCollisionResponseToChannel(ECC_Pawn, SavedHeavyPawnCollisionResponse);
-			HeavyMesh->SetSimulatePhysics(bSavedHeavySimulatePhysics);
-			bHeavyPresentationSaved = false;
-		}
+		ApplyReplicatedIdleWorldPresentation();
 		UpdateHeavyStatusText();
 		return;
 	}
@@ -553,6 +557,53 @@ void AOMHeavyCarryableActor::RestoreWorldPresentation(const FTransform& TargetTr
 	bHeavyPresentationSaved = false;
 	bHeavyCarryObstructed = false;
 	HeavyObstructionNormal = FVector::ZeroVector;
+}
+
+void AOMHeavyCarryableActor::PublishAuthoritativeWorldPresentation(const FTransform& TargetTransform)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	RestoreWorldPresentation(TargetTransform);
+	ReplicatedHeavyWorldState.Transform = GetActorTransform();
+	ReplicatedHeavyWorldState.bSimulatePhysics = bSavedHeavySimulatePhysics;
+	++ReplicatedHeavyWorldState.Revision;
+	ForceNetUpdate();
+}
+
+void AOMHeavyCarryableActor::ApplyReplicatedIdleWorldPresentation()
+{
+	if (HasAuthority() || HeavyCarryState != EOMHeavyCarryState::Idle
+		|| ReplicatedHeavyWorldState.Revision == 0
+		|| ReplicatedHeavyWorldState.Revision == AppliedHeavyWorldStateRevision)
+	{
+		return;
+	}
+
+	UStaticMeshComponent* HeavyMesh = FindComponentByClass<UStaticMeshComponent>();
+	if (!HeavyMesh)
+	{
+		return;
+	}
+
+	HeavyMesh->SetSimulatePhysics(false);
+	SetActorTransform(
+		ReplicatedHeavyWorldState.Transform,
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics);
+	HeavyMesh->SetCollisionEnabled(SavedHeavyCollision);
+	HeavyMesh->SetCollisionResponseToChannel(ECC_Pawn, SavedHeavyPawnCollisionResponse);
+	HeavyMesh->SetSimulatePhysics(ReplicatedHeavyWorldState.bSimulatePhysics);
+	if (ReplicatedHeavyWorldState.bSimulatePhysics)
+	{
+		HeavyMesh->WakeAllRigidBodies();
+	}
+
+	bHeavyPresentationSaved = false;
+	AppliedHeavyWorldStateRevision = ReplicatedHeavyWorldState.Revision;
 }
 
 void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
@@ -735,5 +786,6 @@ void AOMHeavyCarryableActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	DOREPLIFETIME(AOMHeavyCarryableActor, HeavyCarryState);
 	DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedFirstHolder);
 	DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedSecondHolder);
+	DOREPLIFETIME(AOMHeavyCarryableActor, ReplicatedHeavyWorldState);
 	DOREPLIFETIME(AOMHeavyCarryableActor, HeavyObstructionNormal);
 }

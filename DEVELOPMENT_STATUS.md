@@ -88,6 +88,7 @@ Next: Hilmi's contention, disconnect/recovery, expanded late-join recovery, 3/4-
 - Dedicated `L_Sprint3_MissionTest` contains a compact daylight prototype-character harness for Start, Complete Objective, Fail, Reset and Retry. Editor build, targeted Mission validation, Sprint 2 Carry regression, Sprint 3 Heavy Carry regression and Map Check (0 errors / 0 warnings) passed. Manual Mission and Hilmi network acceptance remain pending.
 - Mission foundation now has the minimum server-authoritative multiplayer layer: replicated Mission ID/target/state/progress with RepNotify presentation, the existing `UOMInteractionComponent` Server RPC request path, authority guards on state changes and replicated objective-fixture consumption to reject duplicate completion. Manual single-player and final two-player Listen Server Mission retests PASSED: Client/Server Start, Objective, Fail, Reset and Retry synchronization, duplicate blocking and READY/LOCKED presentation were verified.
 - Scale-readiness foundation now derives the shared local/server interaction trace origin from the current scaled Character capsule, calculates Heavy Carry holder separation from real world-space slot positions, and exposes the existing 10-UU holder safety margin without changing its default. Existing movement, camera, jump, mantle, interaction ranges, Carry clearance/drop offsets, capsule and crouch settings remain independently tunable through Character/component or Blueprint defaults; no global scale multiplier was introduced. Editor/Game Development builds and Sprint 1 Interaction, Sprint 2 Carry, Sprint 3 Heavy Carry and Mission automated validations passed with Map Check reporting 0 errors / 0 warnings. Current-scale manual Interaction/Heavy Carry regression remains pending.
+- Carry networking/presentation closeout manual acceptance PASSED in two-player Listen Server testing: both Heavy Carry final-holder release orders reconcile to the server-owned world state, and Normal Carry's collisionless client visual now follows the rendered local Carry target without the previous owning-client lag/rubber-band while gameplay transform, sweep, collision, obstruction and Drop authority remain server-owned.
 
 ## Repository
 
@@ -112,6 +113,7 @@ Repository setup: Complete
 - Sprint 3 includes minimal replicated holder/state and collision consistency needed to stop owning-client prediction fighting. Hilmi still owns authoritative contention, disconnect/late-state recovery, adverse-network behavior and formal physical-network evidence.
 - Sprint 3 Yusuf gameplay acceptance passed, but it is not full multiplayer/network acceptance.
 - Mission gameplay has a minimal server-authoritative public snapshot and uses the established Interaction Server RPC; Hilmi still owns production objective rules, multi-player contention, disconnect/recovery, late-state, adverse-network behavior and formal network evidence.
+- Known pre-existing Heavy Carry startup-clearance issue: if a holder begins extremely close to the cargo, state may reach 2/2 before the cargo lifts. Stepping slightly backward recovers without Reset. This was present before the Carry presentation branch, is not a regression, and is deferred to Scale Calibration where holder slots, capsule scale, clearance and cargo dimensions will be tuned together.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -135,15 +137,15 @@ Repository setup: Complete
 
 ## Active Work
 
-Developer: Yusuf Emre (scale-readiness gameplay foundation) / Hilmi Tunahan network acceptance remains pending
+Developer: Ali / Yusuf / Hilmi scale-calibration ownership; Hilmi formal network acceptance remains pending
 
-System: Mouse Scale Calibration Readiness
+System: Mouse Scale Calibration
 
-Branch: `feature/yusuf-scale-readiness`
+Branch: NOT CREATED
 
-Main files: `UOMInteractionComponent`, `AOMHeavyCarryableActor`, `AOMMouseCharacter`, and targeted validation scripts
+Main files: to be selected from latest `main` after Carry closeout
 
-Status: AUTOMATED SCALE-READINESS VALIDATION PASSED - MANUAL CURRENT-SCALE INTERACTION/HEAVY CARRY REGRESSION REQUIRED - SCALE CALIBRATION NOT STARTED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: CARRY NETWORKING/PRESENTATION MANUAL ACCEPTANCE PASSED - SCALE CALIBRATION READY BUT NOT STARTED - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

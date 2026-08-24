@@ -25,10 +25,23 @@ AOMCarryableActor::AOMCarryableActor()
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetRelativeScale3D(FVector(0.45f));
 
+	ClientVisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ClientVisualMesh"));
+	ClientVisualMesh->SetupAttachment(Mesh);
+	ClientVisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ClientVisualMesh->SetGenerateOverlapEvents(false);
+	ClientVisualMesh->SetCanEverAffectNavigation(false);
+	ClientVisualMesh->SetSimulatePhysics(false);
+	ClientVisualMesh->SetVisibility(false);
+	ClientVisualMesh->SetHiddenInGame(true);
+	ClientVisualMesh->SetIsReplicated(false);
+	ClientVisualMesh->SetUsingAbsoluteLocation(true);
+	ClientVisualMesh->SetUsingAbsoluteRotation(true);
+
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (CubeMesh.Succeeded())
 	{
 		Mesh->SetStaticMesh(CubeMesh.Object);
+		ClientVisualMesh->SetStaticMesh(CubeMesh.Object);
 	}
 
 	StatusText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("StatusText"));
@@ -53,13 +66,20 @@ void AOMCarryableActor::BeginPlay()
 		AuthoritativeWorldTransform = HomeTransform;
 		WorldStateRevision = 1;
 	}
+	InitializeClientVisualMesh();
 	UpdateStatusText();
 }
 
 void AOMCarryableActor::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if (!HasAuthority() || !IsValid(CurrentHolder))
+	if (!HasAuthority())
+	{
+		UpdateClientCarryPresentation();
+		return;
+	}
+
+	if (!IsValid(CurrentHolder))
 	{
 		return;
 	}
@@ -75,6 +95,7 @@ void AOMCarryableActor::Tick(float DeltaSeconds)
 
 void AOMCarryableActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	DeactivateClientCarryPresentation();
 	ClearHolderCollisionIgnores();
 	Super::EndPlay(EndPlayReason);
 }
@@ -264,6 +285,10 @@ void AOMCarryableActor::ApplyCarryPresentation(USceneComponent* NewCarryPoint)
 	{
 		UpdateCarriedTransform();
 	}
+	else
+	{
+		ActivateClientCarryPresentation(NewCarryPoint);
+	}
 	UpdateStatusText();
 }
 
@@ -300,6 +325,28 @@ FTransform AOMCarryableActor::BuildCarryTargetTransform(USceneComponent* CarryPo
 	return TargetTransform;
 }
 
+FTransform AOMCarryableActor::BuildClientPresentationTransform(USceneComponent* CarryPoint) const
+{
+	const FTransform LocalTarget = BuildCarryTargetTransform(CarryPoint);
+	const FTransform AuthoritativeTransform = GetActorTransform();
+	FVector VisualOffset = LocalTarget.GetLocation() - AuthoritativeTransform.GetLocation();
+	const FVector ObstructionNormal = FVector(CarryObstructionNormal).GetSafeNormal();
+	if (!ObstructionNormal.IsNearlyZero() && FVector::DotProduct(VisualOffset, ObstructionNormal) < 0.0f)
+	{
+		// Preserve tangential and outward presentation motion while preventing visual travel into the server obstruction.
+		VisualOffset = FVector::VectorPlaneProject(VisualOffset, ObstructionNormal);
+	}
+
+	if (VisualOffset.SizeSquared() > FMath::Square(ClientVisualHardCorrectionDistance))
+	{
+		return AuthoritativeTransform;
+	}
+
+	FTransform PresentationTransform = LocalTarget;
+	PresentationTransform.SetLocation(AuthoritativeTransform.GetLocation() + VisualOffset);
+	return PresentationTransform;
+}
+
 void AOMCarryableActor::UpdateCarriedTransform()
 {
 	if (!HasAuthority() || !IsValid(CurrentHolder) || !Mesh)
@@ -323,6 +370,113 @@ void AOMCarryableActor::UpdateCarriedTransform()
 		&Hit,
 		ETeleportType::None);
 	SetCarryObstructed(Hit.bBlockingHit, Hit);
+}
+
+void AOMCarryableActor::InitializeClientVisualMesh()
+{
+	if (!Mesh || !ClientVisualMesh)
+	{
+		return;
+	}
+
+	ClientVisualMesh->SetStaticMesh(Mesh->GetStaticMesh());
+	ClientVisualMesh->SetRelativeScale3D(FVector::OneVector);
+	for (int32 MaterialIndex = 0; MaterialIndex < Mesh->GetNumMaterials(); ++MaterialIndex)
+	{
+		ClientVisualMesh->SetMaterial(MaterialIndex, Mesh->GetMaterial(MaterialIndex));
+	}
+	ClientVisualMesh->SetVisibility(false);
+	ClientVisualMesh->SetHiddenInGame(true);
+}
+
+void AOMCarryableActor::ActivateClientCarryPresentation(USceneComponent* CarryPoint)
+{
+	if (HasAuthority() || !Mesh || !ClientVisualMesh || !IsValid(CarryPoint))
+	{
+		return;
+	}
+
+	InitializeClientVisualMesh();
+	if (!bClientCarryPresentationActive)
+	{
+		bAuthoritativeMeshWasVisible = Mesh->IsVisible();
+		bAuthoritativeMeshWasHiddenInGame = Mesh->bHiddenInGame;
+		ClientCarryStartWorldStateRevision = WorldStateRevision;
+		bClientCarryPresentationActive = true;
+	}
+
+	if (UCharacterMovementComponent* Movement = IsValid(CurrentHolder)
+		? CurrentHolder->GetCharacterMovement()
+		: nullptr)
+	{
+		if (ClientPresentationTickPrerequisite.Get() != Movement)
+		{
+			if (UCharacterMovementComponent* PreviousMovement = ClientPresentationTickPrerequisite.Get())
+			{
+				RemoveTickPrerequisiteComponent(PreviousMovement);
+			}
+			AddTickPrerequisiteComponent(Movement);
+			ClientPresentationTickPrerequisite = Movement;
+		}
+	}
+
+	const FTransform PresentationTransform = BuildClientPresentationTransform(CarryPoint);
+	ClientVisualMesh->SetWorldLocationAndRotation(
+		PresentationTransform.GetLocation(),
+		PresentationTransform.GetRotation());
+	Mesh->SetVisibility(false, false);
+	Mesh->SetHiddenInGame(true, false);
+	ClientVisualMesh->SetVisibility(true);
+	ClientVisualMesh->SetHiddenInGame(false);
+	SetActorTickEnabled(true);
+}
+
+void AOMCarryableActor::UpdateClientCarryPresentation()
+{
+	if (!bClientCarryPresentationActive || !ClientVisualMesh || !IsValid(CurrentHolder))
+	{
+		return;
+	}
+
+	const UOMCarryComponent* HolderCarryComponent = CurrentHolder->FindComponentByClass<UOMCarryComponent>();
+	USceneComponent* CarryPoint = HolderCarryComponent ? HolderCarryComponent->GetCarryPoint() : nullptr;
+	if (!IsValid(CarryPoint))
+	{
+		return;
+	}
+
+	const FTransform PresentationTransform = BuildClientPresentationTransform(CarryPoint);
+	ClientVisualMesh->SetWorldLocationAndRotation(
+		PresentationTransform.GetLocation(),
+		PresentationTransform.GetRotation());
+}
+
+void AOMCarryableActor::DeactivateClientCarryPresentation()
+{
+	if (!bClientCarryPresentationActive)
+	{
+		return;
+	}
+
+	if (UCharacterMovementComponent* Movement = ClientPresentationTickPrerequisite.Get())
+	{
+		RemoveTickPrerequisiteComponent(Movement);
+	}
+	ClientPresentationTickPrerequisite = nullptr;
+
+	if (ClientVisualMesh)
+	{
+		ClientVisualMesh->SetVisibility(false);
+		ClientVisualMesh->SetHiddenInGame(true);
+	}
+	if (Mesh)
+	{
+		Mesh->SetVisibility(bAuthoritativeMeshWasVisible, false);
+		Mesh->SetHiddenInGame(bAuthoritativeMeshWasHiddenInGame, false);
+	}
+
+	bClientCarryPresentationActive = false;
+	SetActorTickEnabled(false);
 }
 
 void AOMCarryableActor::ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder)
@@ -397,6 +551,7 @@ void AOMCarryableActor::ApplyReplicatedWorldPresentation()
 	Mesh->SetCollisionEnabled(SavedCollisionEnabled);
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, SavedPawnCollisionResponse);
 	SetActorTransform(AuthoritativeWorldTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	DeactivateClientCarryPresentation();
 	bHasSavedWorldState = false;
 	UpdateStatusText();
 }
@@ -418,6 +573,12 @@ void AOMCarryableActor::ReconcileReplicatedPresentation()
 			TEXT("[Carry][Replicated] Target=%s Holder=%s Result=PendingPresentation Reason=MissingCarryPoint"),
 			*GetName(),
 			*GetNameSafe(CurrentHolder));
+		return;
+	}
+
+	if (!HasAuthority() && bClientCarryPresentationActive
+		&& WorldStateRevision == ClientCarryStartWorldStateRevision)
+	{
 		return;
 	}
 

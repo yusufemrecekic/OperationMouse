@@ -15,6 +15,22 @@ enum class EOMHeavyCarryState : uint8
 	Carrying
 };
 
+/** One-shot authoritative handoff from carried presentation back to world physics. */
+USTRUCT()
+struct FOMHeavyCarryWorldState
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FTransform Transform = FTransform::Identity;
+
+	UPROPERTY()
+	uint32 Revision = 0;
+
+	UPROPERTY()
+	bool bSimulatePhysics = true;
+};
+
 /** Yusuf-owned two-player Heavy Carry gameplay with minimal replicated collision consistency. */
 UCLASS(Blueprintable)
 class OPERATIONMOUSE_API AOMHeavyCarryableActor : public AOMCarryableActor
@@ -59,6 +75,8 @@ private:
 	void AddCarrierMovementIgnore(AOMMouseCharacter* SourceCharacter, AActor* TargetActor);
 	void FreezeAtCurrentTransform();
 	void RestoreWorldPresentation(const FTransform& TargetTransform);
+	void PublishAuthoritativeWorldPresentation(const FTransform& TargetTransform);
+	void ApplyReplicatedIdleWorldPresentation();
 	void UpdateHeavyCarryTransform();
 	void SetHeavyCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
 	void SyncReplicatedCarryState();
@@ -72,6 +90,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_HeavyCarryNetworkState();
+
+	UFUNCTION()
+	void OnRep_HeavyCarryWorldState();
 
 	/** First gameplay holder aligns its CarryPoint to this side of the object. */
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Heavy Carry")
@@ -98,6 +119,10 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_HeavyCarryNetworkState)
 	TObjectPtr<AOMMouseCharacter> ReplicatedSecondHolder;
 
+	/** Final server-owned release/reset transform; normal physics replication resumes after this handoff. */
+	UPROPERTY(ReplicatedUsing = OnRep_HeavyCarryWorldState)
+	FOMHeavyCarryWorldState ReplicatedHeavyWorldState;
+
 	/** Server sweep normal used by both authority and owning-client movement constraint. */
 	UPROPERTY(Replicated)
 	FVector_NetQuantizeNormal HeavyObstructionNormal = FVector::ZeroVector;
@@ -108,6 +133,7 @@ private:
 	bool bSavedHeavySimulatePhysics = true;
 	bool bHeavyPresentationSaved = false;
 	bool bHeavyCarryObstructed = false;
+	uint32 AppliedHeavyWorldStateRevision = 0;
 	TArray<TWeakObjectPtr<AOMMouseCharacter>> ReplicatedPenaltyCharacters;
 
 	/** Only pair-specific ignores added by Heavy Carry; cleared on release/reset. */

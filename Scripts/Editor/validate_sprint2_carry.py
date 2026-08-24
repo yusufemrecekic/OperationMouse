@@ -53,6 +53,8 @@ def validate_network_contract_source():
             "ReplicatedUsing = OnRep_WorldStateRevision",
             "AuthoritativeWorldTransform",
             "CarryObstructionNormal",
+            "ClientVisualMesh",
+            "ClientVisualHardCorrectionDistance",
         ),
         "actor_cpp": (
             "DOREPLIFETIME(AOMCarryableActor, CurrentHolder)",
@@ -63,6 +65,11 @@ def validate_network_contract_source():
             "PublishAuthoritativeWorldState",
             "SetPhysicsLinearVelocity(FVector::ZeroVector)",
             "SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector)",
+            "ActivateClientCarryPresentation",
+            "UpdateClientCarryPresentation",
+            "DeactivateClientCarryPresentation",
+            "VectorPlaneProject(VisualOffset, ObstructionNormal)",
+            "BuildClientPresentationTransform",
         ),
         "interaction_cpp": (
             "ServerBeginInteraction_Implementation",
@@ -77,6 +84,19 @@ def validate_network_contract_source():
         for token in tokens:
             if token not in files[file_key]:
                 fail(f"Network Carry contract token missing in {file_key}: {token}")
+
+    if "UFUNCTION(Server" in files["actor_h"] or "NetMulticast" in files["actor_h"] + files["actor_cpp"]:
+        fail("Normal Carry client presentation must not add per-frame RPC or multicast authority")
+
+    obsolete_smoothing_tokens = (
+        "ClientVisualSmoothingSpeed",
+        "ClientVisualMaxOffset",
+        "VInterpTo",
+        "QInterpTo",
+    )
+    for token in obsolete_smoothing_tokens:
+        if token in files["actor_h"] + files["actor_cpp"]:
+            fail(f"Obsolete Normal Carry presentation smoothing remains: {token}")
 
     unreal.log("OM_SPRINT2_VALIDATION|PASS|NETWORK_SOURCE_CONTRACT")
 
@@ -212,6 +232,7 @@ def validate():
         if scale.x <= 0.0 or scale.y <= 0.0 or scale.z <= 0.0:
             fail(f"Mirrored label scale: {actor.get_actor_label()} {scale}")
 
+    unreal.SystemLibrary.execute_console_command(world, "MAP CHECK")
     unreal.log(
         "OM_SPRINT2_VALIDATION|PASS|"
         f"carryables={len(carryables)}|starts={len(starts)}|reset={len(reset_actors)}|"
