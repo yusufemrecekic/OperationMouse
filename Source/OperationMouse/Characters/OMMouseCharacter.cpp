@@ -117,6 +117,7 @@ AOMMouseCharacter::AOMMouseCharacter()
 void AOMMouseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	// Blueprint class defaults are loaded after the native constructor, so apply the existing tuning property here.
 	GetCharacterMovement()->AirControl = AirControlStrength;
 	if (CarryComponent)
 	{
