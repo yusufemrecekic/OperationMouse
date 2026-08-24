@@ -7,6 +7,7 @@
 
 class UOMCarryComponent;
 class AOMMouseCharacter;
+class UCharacterMovementComponent;
 class USceneComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
@@ -60,6 +61,10 @@ private:
 	void ApplyCarryPresentation(USceneComponent* NewCarryPoint);
 	FTransform BuildCarryTargetTransform(USceneComponent* CarryPoint) const;
 	void UpdateCarriedTransform();
+	void InitializeClientVisualMesh();
+	void ActivateClientCarryPresentation(USceneComponent* CarryPoint);
+	void UpdateClientCarryPresentation(float DeltaSeconds);
+	void DeactivateClientCarryPresentation();
 	void ApplyHolderCollisionIgnores(AOMMouseCharacter* Holder);
 	void ClearHolderCollisionIgnores();
 	void SetCarryObstructed(bool bNewObstructed, const FHitResult& Hit);
@@ -72,6 +77,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Carry")
 	TObjectPtr<UStaticMeshComponent> Mesh;
+
+	/** Collision-free client-only mesh that follows the locally rendered holder; gameplay remains on Mesh. */
+	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Carry|Presentation")
+	TObjectPtr<UStaticMeshComponent> ClientVisualMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Operation Mouse|Carry")
 	TObjectPtr<UTextRenderComponent> StatusText;
@@ -107,6 +116,18 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation")
 	FVector CarryOffset = FVector::ZeroVector;
 
+	/** Non-authoritative visual interpolation speed; later mouse-scale calibration may tune this value. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float ClientVisualSmoothingSpeed = 24.0f;
+
+	/** Maximum client-only visual lead from the replicated collision actor. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float ClientVisualMaxOffset = 45.0f;
+
+	/** Distance at which a genuine authoritative correction immediately wins over interpolation. */
+	UPROPERTY(EditAnywhere, Category = "Operation Mouse|Carry|Presentation", meta = (ClampMin = "0.0"))
+	float ClientVisualHardCorrectionDistance = 120.0f;
+
 	FTransform HomeTransform;
 	TEnumAsByte<ECollisionEnabled::Type> SavedCollisionEnabled = ECollisionEnabled::QueryAndPhysics;
 	TEnumAsByte<ECollisionResponse> SavedPawnCollisionResponse = ECR_Block;
@@ -115,5 +136,10 @@ private:
 	bool bAddedMeshIgnoreForHolder = false;
 	bool bAddedHolderIgnoreForCargo = false;
 	bool bCarryObstructed = false;
+	bool bClientCarryPresentationActive = false;
+	bool bAuthoritativeMeshWasVisible = true;
+	bool bAuthoritativeMeshWasHiddenInGame = false;
+	uint32 ClientCarryStartWorldStateRevision = 0;
 	TWeakObjectPtr<AOMMouseCharacter> CollisionIgnoredHolder;
+	TWeakObjectPtr<UCharacterMovementComponent> ClientPresentationTickPrerequisite;
 };

@@ -53,6 +53,10 @@ def validate_network_contract_source():
             "ReplicatedUsing = OnRep_WorldStateRevision",
             "AuthoritativeWorldTransform",
             "CarryObstructionNormal",
+            "ClientVisualMesh",
+            "ClientVisualSmoothingSpeed",
+            "ClientVisualMaxOffset",
+            "ClientVisualHardCorrectionDistance",
         ),
         "actor_cpp": (
             "DOREPLIFETIME(AOMCarryableActor, CurrentHolder)",
@@ -63,6 +67,11 @@ def validate_network_contract_source():
             "PublishAuthoritativeWorldState",
             "SetPhysicsLinearVelocity(FVector::ZeroVector)",
             "SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector)",
+            "ActivateClientCarryPresentation",
+            "UpdateClientCarryPresentation",
+            "DeactivateClientCarryPresentation",
+            "VectorPlaneProject(VisualOffset, ObstructionNormal)",
+            "GetClampedToMaxSize(ClientVisualMaxOffset)",
         ),
         "interaction_cpp": (
             "ServerBeginInteraction_Implementation",
@@ -77,6 +86,9 @@ def validate_network_contract_source():
         for token in tokens:
             if token not in files[file_key]:
                 fail(f"Network Carry contract token missing in {file_key}: {token}")
+
+    if "UFUNCTION(Server" in files["actor_h"] or "NetMulticast" in files["actor_h"] + files["actor_cpp"]:
+        fail("Normal Carry visual smoothing must not add per-frame RPC or multicast authority")
 
     unreal.log("OM_SPRINT2_VALIDATION|PASS|NETWORK_SOURCE_CONTRACT")
 
