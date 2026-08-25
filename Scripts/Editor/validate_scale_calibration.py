@@ -119,6 +119,7 @@ expected_camera = {
     "close_space_threshold": 0.55,
     "close_space_vertical_offset_half_height_multiplier": 1.0,
     "close_space_blend_speed": 8.0,
+    "max_soft_occluders_per_sweep": 4,
 }
 for property_name, expected in expected_camera.items():
     actual = close_space_camera_b.get_editor_property(property_name)
@@ -186,6 +187,40 @@ required_human_references = {
 missing_human = sorted(required_human_references - actor_labels)
 if missing_human:
     fail(f"Human reference blockout is incomplete: {missing_human}")
+
+chair_labels = {
+    "Scale_A_ChairSeat45",
+    "Scale_A_ChairBack",
+    "Scale_A_ChairLeg_-1795_-925",
+    "Scale_A_ChairLeg_-1795_-875",
+    "Scale_A_ChairLeg_-1745_-925",
+    "Scale_A_ChairLeg_-1745_-875",
+}
+chair_parts = [actor for actor in actors if actor.get_actor_label() in chair_labels]
+if len(chair_parts) != len(chair_labels):
+    fail(f"Chair component actors are incomplete: {len(chair_parts)}")
+for chair_part in chair_parts:
+    if "OMCameraSoftOccluder" not in {
+        str(tag) for tag in chair_part.get_editor_property("tags")
+    }:
+        fail(f"Chair part is not an explicit soft camera occluder: {chair_part.get_actor_label()}")
+    component = chair_part.get_editor_property("static_mesh_component")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Soft chair part no longer blocks ECC_Camera for explicit classification: {chair_part.get_actor_label()}")
+
+soft_actor_labels = {
+    actor.get_actor_label()
+    for actor in actors
+    if "OMCameraSoftOccluder" in {
+        str(tag) for tag in actor.get_editor_property("tags")
+    }
+}
+if soft_actor_labels != chair_labels:
+    fail(f"Unexpected soft camera occluder classification: {sorted(soft_actor_labels)}")
+
+for wall in camera_walls:
+    if "OMCameraSoftOccluder" in {str(tag) for tag in wall.get_editor_property("tags")}:
+        fail(f"Hard camera fixture was incorrectly marked soft: {wall.get_actor_label()}")
 required_distance_markers = {
     f"Scale_F_CapsuleFront_{distance}" for distance in (40, 60, 80, 100, 120)
 }

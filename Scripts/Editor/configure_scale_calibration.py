@@ -22,6 +22,7 @@ FLOOR_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Floor"
 FIXTURE_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Fixture"
 MARKER_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Marker"
 HARNESS_TAG = unreal.Name("ScaleCalibrationHarness")
+SOFT_CAMERA_OCCLUDER_TAG = unreal.Name("OMCameraSoftOccluder")
 
 CANDIDATE_B_RADIUS = 7.5
 CANDIDATE_B_HALF_HEIGHT = 15.0
@@ -246,6 +247,13 @@ def add_cube(actor_subsystem, cube, material, label, location, dimensions, zone)
     return actor
 
 
+def mark_soft_camera_occluder(actor):
+    tags = list(actor.get_editor_property("tags"))
+    if SOFT_CAMERA_OCCLUDER_TAG not in tags:
+        tags.append(SOFT_CAMERA_OCCLUDER_TAG)
+        actor.set_editor_property("tags", tags)
+
+
 def add_text(actor_subsystem, label, text, location, zone, size=20.0):
     actor = spawn(
         actor_subsystem,
@@ -349,11 +357,17 @@ def build_zone_a(actor_subsystem, cube, floor, fixture):
             add_cube(actor_subsystem, cube, fixture, f"Scale_A_TableLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 35), (12, 12, 70), zone)
     add_text(actor_subsystem, "Scale_Label_A_Table", "HUMAN DINING TABLE - 75 UU", unreal.Vector(-2150, -900, 110), zone, 14)
 
-    add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairSeat45", unreal.Vector(-1770, -900, 42), (70, 70, 6), zone)
-    add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairBack", unreal.Vector(-1802, -900, 78), (6, 70, 72), zone)
+    chair_parts = [
+        add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairSeat45", unreal.Vector(-1770, -900, 42), (70, 70, 6), zone),
+        add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairBack", unreal.Vector(-1802, -900, 78), (6, 70, 72), zone),
+    ]
     for x in (-1795.0, -1745.0):
         for y in (-925.0, -875.0):
-            add_cube(actor_subsystem, cube, fixture, f"Scale_A_ChairLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 21), (8, 8, 42), zone)
+            chair_parts.append(
+                add_cube(actor_subsystem, cube, fixture, f"Scale_A_ChairLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 21), (8, 8, 42), zone)
+            )
+    for chair_part in chair_parts:
+        mark_soft_camera_occluder(chair_part)
     add_text(actor_subsystem, "Scale_Label_A_Chair", "HUMAN CHAIR - SEAT 45 UU", unreal.Vector(-1770, -900, 125), zone, 14)
 
     add_cube(actor_subsystem, cube, fixture, "Scale_A_HumanBody180", unreal.Vector(-1630, -1190, 90), (35, 22, 130), zone)
