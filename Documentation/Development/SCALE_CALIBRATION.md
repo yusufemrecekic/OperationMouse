@@ -65,6 +65,9 @@ GameMode no longer spawns it by default.
 | Minimum safe distance | capsule radius x 2.0 |
 | Close-space threshold | 0.55 compression ratio |
 | Maximum adaptive pivot rise | capsule half-height x 1.0 |
+| Base pivot height | current capsule half-height x 1.2 |
+| Provisional crouch arm | standing desired arm x 0.60 (102 uu) |
+| Posture blend rate | 8 per second |
 
 Candidate B opts into `UOMCloseSpaceCameraComponent`; the reusable component is
 disabled by default on the production Character. It owns a local-only 5-uu
@@ -75,11 +78,22 @@ smoothly raises the pivot by at most one scaled capsule half-height. The minimum
 readable distance derives from scaled capsule radius, so later mouse-scale
 calibration does not require absolute collision distances in C++.
 
-If geometry leaves less than two scaled capsule radii of camera space, only the
-owning local player's mesh is hidden with hysteresis until safe space returns.
-No camera state, RPC, gameplay transform or remote mesh visibility is changed.
-This fallback is intentionally minimal; final production materials/fade remain
-an Ali visual decision after the scale and camera behavior are accepted.
+Candidate B now resolves camera composition in two collision-safe stages. The
+base pivot follows the current scaled capsule half-height (`x 1.2`), producing
+18 uu standing and 9.6 uu crouched. Pivot height and the provisional crouch arm
+(170 x 0.60 = 102 uu) blend at 8/s. Before the existing camera-distance sweep,
+the requested base/adaptive pivot is sphere-swept from the Character reference
+on `ECC_Camera`; overhead furniture or roofs clamp it to the player's side with
+the existing 2-uu padding. Initial penetration uses the sweep MTD normal and
+depth, while a camera-distance sweep that starts penetrating clamps to zero
+instead of accepting a cross-geometry result.
+
+Whole-mesh hiding is now narrowed to a true emergency collapse:
+the trigger is the smaller of half the 5-uu probe and one quarter of the
+capsule-derived readable distance (2.5 uu here), restoring at 5 uu. Ordinary
+crouch and low-clearance compression therefore retain the visible mouse. No
+camera state, RPC, gameplay transform or remote mesh visibility is changed.
+Final production materials/fade remain an Ali visual decision if ever needed.
 
 The UE 5.8 inherited perspective near clip was 10 uu. A 5-uu sweep therefore
 left the camera center collision-safe while its near plane could begin beyond

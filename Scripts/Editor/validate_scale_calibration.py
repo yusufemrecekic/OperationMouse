@@ -27,6 +27,27 @@ near_clip = engine_config.getfloat("/Script/Engine.Engine", "NearClipPlane", fal
 if abs(near_clip - 2.0) > 0.01:
     fail(f"Project perspective NearClipPlane is {near_clip}, expected 2.0 uu")
 
+camera_source_path = os.path.join(
+    unreal.Paths.project_dir(),
+    "Source",
+    "OperationMouse",
+    "Camera",
+    "OMCloseSpaceCameraComponent.cpp",
+)
+with open(camera_source_path, "r", encoding="utf-8") as camera_source_file:
+    camera_source = camera_source_file.read()
+for required_token in (
+    "ResolveSafePivot",
+    "Hit.bStartPenetrating",
+    "EmergencyHideDistance",
+):
+    if required_token not in camera_source:
+        fail(f"Camera safe-pivot/emergency foundation is missing: {required_token}")
+if "HiddenPrimitiveComponents" in camera_source:
+    fail("Rejected furniture hide/show system returned")
+if "CurrentResolvedDistance < MinSafeDistance" in camera_source:
+    fail("Whole-owner mesh hiding still triggers at ordinary readable distance")
+
 
 for path in (MAP_PATH, PLAYER_A_PATH, PLAYER_B_PATH, GAME_MODE_PATH):
     if not unreal.EditorAssetLibrary.does_asset_exist(path):
@@ -119,6 +140,9 @@ expected_camera = {
     "close_space_threshold": 0.55,
     "close_space_vertical_offset_half_height_multiplier": 1.0,
     "close_space_blend_speed": 8.0,
+    "base_pivot_height_factor": 1.2,
+    "crouch_arm_multiplier": 0.6,
+    "crouch_camera_blend_speed": 8.0,
 }
 for property_name, expected in expected_camera.items():
     actual = close_space_camera_b.get_editor_property(property_name)
@@ -127,6 +151,12 @@ for property_name, expected in expected_camera.items():
 open_offset = close_space_camera_b.get_editor_property("open_space_target_offset")
 if abs(open_offset.z - 18.0) > 0.01:
     fail(f"Candidate B close-space open offset is wrong: {open_offset}")
+standing_pivot_z = capsule_b.get_unscaled_capsule_half_height() * close_space_camera_b.get_editor_property("base_pivot_height_factor")
+crouched_pivot_z = movement_b.get_editor_property("crouched_half_height") * close_space_camera_b.get_editor_property("base_pivot_height_factor")
+if abs(standing_pivot_z - 18.0) > 0.01 or abs(crouched_pivot_z - 9.6) > 0.01:
+    fail(f"Candidate B posture pivot calibration is wrong: standing={standing_pivot_z} crouched={crouched_pivot_z}")
+if abs(170.0 * close_space_camera_b.get_editor_property("crouch_arm_multiplier") - 102.0) > 0.01:
+    fail("Candidate B crouched desired arm is not 102 uu")
 
 game_mode_cdo = unreal.get_default_object(game_mode.generated_class())
 if game_mode_cdo.get_editor_property("default_pawn_class") != candidate_b.generated_class():
@@ -142,6 +172,8 @@ if world.get_world_settings().get_editor_property("default_game_mode") != game_m
 
 actors = list(actor_subsystem.get_all_level_actors())
 tags = {str(tag) for actor in actors for tag in list(actor.get_editor_property("tags"))}
+if "OMCameraSoftOccluder" in tags:
+    fail("Rejected soft-occluder tag returned to the calibration map")
 missing_zones = [f"ScaleZone{letter}" for letter in "ABCDEFGHI" if f"ScaleZone{letter}" not in tags]
 if missing_zones:
     fail(f"Missing calibration zones: {missing_zones}")

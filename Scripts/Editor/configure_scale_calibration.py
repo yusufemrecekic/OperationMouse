@@ -44,6 +44,9 @@ CANDIDATE_B_CAMERA_MIN_SAFE_RADIUS_MULTIPLIER = 2.0
 CANDIDATE_B_CAMERA_CLOSE_THRESHOLD = 0.55
 CANDIDATE_B_CAMERA_CLOSE_VERTICAL_HALF_HEIGHT_MULTIPLIER = 1.0
 CANDIDATE_B_CAMERA_CLOSE_BLEND_SPEED = 8.0
+CANDIDATE_B_CAMERA_BASE_PIVOT_HEIGHT_FACTOR = 1.2
+CANDIDATE_B_CAMERA_CROUCH_ARM_MULTIPLIER = 0.6
+CANDIDATE_B_CAMERA_CROUCH_BLEND_SPEED = 8.0
 
 
 def create_blueprint(asset_name, parent_class):
@@ -168,6 +171,15 @@ def configure_candidate_assets():
     )
     close_space_camera.set_editor_property(
         "close_space_blend_speed", CANDIDATE_B_CAMERA_CLOSE_BLEND_SPEED
+    )
+    close_space_camera.set_editor_property(
+        "base_pivot_height_factor", CANDIDATE_B_CAMERA_BASE_PIVOT_HEIGHT_FACTOR
+    )
+    close_space_camera.set_editor_property(
+        "crouch_arm_multiplier", CANDIDATE_B_CAMERA_CROUCH_ARM_MULTIPLIER
+    )
+    close_space_camera.set_editor_property(
+        "crouch_camera_blend_speed", CANDIDATE_B_CAMERA_CROUCH_BLEND_SPEED
     )
     close_space_camera.set_editor_property(
         "open_space_target_offset",

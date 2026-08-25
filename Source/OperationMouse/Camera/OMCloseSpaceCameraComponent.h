@@ -68,14 +68,32 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation")
 	FVector OpenSpaceTargetOffset = FVector(0.0f, 0.0f, 18.0f);
 
+	/** Base pivot height derived from the current scaled capsule half-height (15 x 1.2 preserves Candidate B's 18-uu standing offset). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.0"))
+	float BasePivotHeightFactor = 1.2f;
+
+	/** Provisional close third-person arm ratio while crouched. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.1", ClampMax = "1.0"))
+	float CrouchArmMultiplier = 0.6f;
+
+	/** Frame-rate-independent posture blend for pivot height and desired arm length. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.0"))
+	float CrouchCameraBlendSpeed = 8.0f;
+
 private:
 	void InitializeLocalResolver();
-	float FindObstructionLimit(const FVector& Pivot, const FRotator& CameraRotation) const;
+	FVector ResolveSafePivot(const FVector& Reference, const FVector& DesiredPivot) const;
+	float FindObstructionLimit(
+		const FVector& Pivot,
+		const FRotator& CameraRotation,
+		float DesiredDistance) const;
 	void SetOwnerMeshFallback(bool bShouldHide);
 
 	TObjectPtr<ACharacter> CharacterOwner;
 	TObjectPtr<USpringArmComponent> CameraBoom;
 	float CurrentResolvedDistance = 0.0f;
+	float CurrentDesiredArmLength = 0.0f;
+	float CurrentBasePivotHeight = 0.0f;
 	float CurrentCloseSpaceAlpha = 0.0f;
 	bool bOriginalSpringArmCollision = true;
 	bool bOriginalOwnerNoSee = false;

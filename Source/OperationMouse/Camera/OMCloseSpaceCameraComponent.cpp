@@ -46,6 +46,12 @@ void UOMCloseSpaceCameraComponent::InitializeLocalResolver()
 	CameraBoom->TargetArmLength = DesiredArmLength;
 	CameraBoom->TargetOffset = OpenSpaceTargetOffset;
 	CurrentResolvedDistance = DesiredArmLength;
+	CurrentDesiredArmLength = DesiredArmLength;
+	if (const UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent())
+	{
+		CurrentBasePivotHeight = Capsule->GetScaledCapsuleHalfHeight() * BasePivotHeightFactor;
+		CameraBoom->TargetOffset.Z = CurrentBasePivotHeight;
+	}
 	CameraBoom->AddTickPrerequisiteComponent(this);
 	bResolverInitialized = true;
 
@@ -94,10 +100,29 @@ void UOMCloseSpaceCameraComponent::TickComponent(
 	}
 
 	const FRotator CameraRotation = CameraBoom->GetTargetRotation();
-	const FVector BasePivot = CameraBoom->GetComponentLocation() + OpenSpaceTargetOffset;
-	const float BaseLimit = FindObstructionLimit(BasePivot, CameraRotation);
-	const float CompressionRatio = DesiredArmLength > UE_SMALL_NUMBER
-		? FMath::Clamp(BaseLimit / DesiredArmLength, 0.0f, 1.0f)
+	const float TargetBasePivotHeight =
+		Capsule->GetScaledCapsuleHalfHeight() * BasePivotHeightFactor;
+	CurrentBasePivotHeight = FMath::FInterpTo(
+		CurrentBasePivotHeight,
+		TargetBasePivotHeight,
+		DeltaTime,
+		CrouchCameraBlendSpeed);
+
+	const float TargetDesiredArmLength = DesiredArmLength
+		* (CharacterOwner->bIsCrouched ? CrouchArmMultiplier : 1.0f);
+	CurrentDesiredArmLength = FMath::FInterpTo(
+		CurrentDesiredArmLength,
+		TargetDesiredArmLength,
+		DeltaTime,
+		CrouchCameraBlendSpeed);
+
+	const FVector PivotReference = CameraBoom->GetComponentLocation();
+	FVector BaseOffset = OpenSpaceTargetOffset;
+	BaseOffset.Z = CurrentBasePivotHeight;
+	const FVector BasePivot = ResolveSafePivot(PivotReference, PivotReference + BaseOffset);
+	const float BaseLimit = FindObstructionLimit(BasePivot, CameraRotation, CurrentDesiredArmLength);
+	const float CompressionRatio = CurrentDesiredArmLength > UE_SMALL_NUMBER
+		? FMath::Clamp(BaseLimit / CurrentDesiredArmLength, 0.0f, 1.0f)
 		: 1.0f;
 	const float TargetCloseAlpha = FMath::Clamp(
 		(CloseSpaceThreshold - CompressionRatio) / FMath::Max(CloseSpaceThreshold, UE_SMALL_NUMBER),
@@ -113,10 +138,11 @@ void UOMCloseSpaceCameraComponent::TickComponent(
 		Capsule->GetScaledCapsuleHalfHeight()
 		* CloseSpaceVerticalOffsetHalfHeightMultiplier
 		* CurrentCloseSpaceAlpha;
-	CameraBoom->TargetOffset = OpenSpaceTargetOffset + FVector::UpVector * ExtraPivotHeight;
+	const FVector DesiredPivot = PivotReference + BaseOffset + FVector::UpVector * ExtraPivotHeight;
+	const FVector SafePivot = ResolveSafePivot(PivotReference, DesiredPivot);
+	CameraBoom->TargetOffset = SafePivot - PivotReference;
 
-	const FVector ResolvedPivot = CameraBoom->GetComponentLocation() + CameraBoom->TargetOffset;
-	const float ObstructionLimit = FindObstructionLimit(ResolvedPivot, CameraRotation);
+	const float ObstructionLimit = FindObstructionLimit(SafePivot, CameraRotation, CurrentDesiredArmLength);
 	const float InterpSpeed = ObstructionLimit < CurrentResolvedDistance
 		? CameraRetractSpeed
 		: CameraExtendSpeed;
@@ -128,13 +154,18 @@ void UOMCloseSpaceCameraComponent::TickComponent(
 
 	// Never leave the camera center beyond the latest sphere-sweep limit.
 	SmoothedDistance = FMath::Min(SmoothedDistance, ObstructionLimit);
-	CurrentResolvedDistance = FMath::Clamp(SmoothedDistance, 0.0f, DesiredArmLength);
+	CurrentResolvedDistance = FMath::Clamp(SmoothedDistance, 0.0f, CurrentDesiredArmLength);
 	CameraBoom->TargetArmLength = CurrentResolvedDistance;
 
+	// Whole-character hiding is an emergency guard only. Ordinary crouch and
+	// close-space compression keep the mouse visible in close third person.
 	const float MinSafeDistance =
 		Capsule->GetScaledCapsuleRadius() * MinSafeDistanceRadiusMultiplier;
-	const float RestoreDistance = MinSafeDistance * 1.25f;
-	if (!bOwnerMeshFallbackActive && CurrentResolvedDistance < MinSafeDistance)
+	const float EmergencyHideDistance = FMath::Min(
+		CameraProbeRadius * 0.5f,
+		MinSafeDistance * 0.25f);
+	const float RestoreDistance = FMath::Max(EmergencyHideDistance * 2.0f, CameraProbeRadius);
+	if (!bOwnerMeshFallbackActive && CurrentResolvedDistance < EmergencyHideDistance)
 	{
 		SetOwnerMeshFallback(true);
 	}
@@ -144,16 +175,63 @@ void UOMCloseSpaceCameraComponent::TickComponent(
 	}
 }
 
-float UOMCloseSpaceCameraComponent::FindObstructionLimit(
-	const FVector& Pivot,
-	const FRotator& CameraRotation) const
+FVector UOMCloseSpaceCameraComponent::ResolveSafePivot(
+	const FVector& Reference,
+	const FVector& DesiredPivot) const
 {
 	if (!GetWorld() || !CharacterOwner)
 	{
-		return DesiredArmLength;
+		return DesiredPivot;
 	}
 
-	const FVector DesiredLocation = Pivot - CameraRotation.Vector() * DesiredArmLength;
+	const FVector PivotDelta = DesiredPivot - Reference;
+	const float PivotDistance = PivotDelta.Size();
+	if (PivotDistance <= UE_SMALL_NUMBER)
+	{
+		return Reference;
+	}
+
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OMCloseSpaceCameraPivot), false, CharacterOwner);
+	QueryParams.AddIgnoredActor(CharacterOwner);
+
+	FHitResult Hit;
+	const bool bBlocked = GetWorld()->SweepSingleByChannel(
+		Hit,
+		Reference,
+		DesiredPivot,
+		FQuat::Identity,
+		ECC_Camera,
+		FCollisionShape::MakeSphere(FMath::Max(CameraProbeRadius, 0.1f)),
+		QueryParams);
+	if (!bBlocked)
+	{
+		return DesiredPivot;
+	}
+
+	if (Hit.bStartPenetrating)
+	{
+		const FVector DepenetrationNormal = Hit.Normal.GetSafeNormal(UE_SMALL_NUMBER, FVector::DownVector);
+		return Reference + DepenetrationNormal * (Hit.PenetrationDepth + CameraCollisionPadding);
+	}
+
+	const float SafeDistance = FMath::Clamp(
+		Hit.Distance - CameraCollisionPadding,
+		0.0f,
+		PivotDistance);
+	return Reference + PivotDelta.GetSafeNormal() * SafeDistance;
+}
+
+float UOMCloseSpaceCameraComponent::FindObstructionLimit(
+	const FVector& Pivot,
+	const FRotator& CameraRotation,
+	float DesiredDistance) const
+{
+	if (!GetWorld() || !CharacterOwner)
+	{
+		return DesiredDistance;
+	}
+
+	const FVector DesiredLocation = Pivot - CameraRotation.Vector() * DesiredDistance;
 	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(OMCloseSpaceCamera), false, CharacterOwner);
 	QueryParams.AddIgnoredActor(CharacterOwner);
 
@@ -168,12 +246,16 @@ float UOMCloseSpaceCameraComponent::FindObstructionLimit(
 		QueryParams);
 	if (!bBlocked)
 	{
-		return DesiredArmLength;
+		return DesiredDistance;
+	}
+	if (Hit.bStartPenetrating)
+	{
+		return 0.0f;
 	}
 
 	// Hit.Distance places the swept sphere exactly at first contact. Keep a small
 	// calibrated gap so the perspective near plane remains on the visible side.
-	return FMath::Clamp(Hit.Distance - CameraCollisionPadding, 0.0f, DesiredArmLength);
+	return FMath::Clamp(Hit.Distance - CameraCollisionPadding, 0.0f, DesiredDistance);
 }
 
 void UOMCloseSpaceCameraComponent::SetOwnerMeshFallback(bool bShouldHide)
