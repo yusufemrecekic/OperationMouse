@@ -37,6 +37,12 @@ CANDIDATE_B_JUMP_Z = 245.0
 CANDIDATE_B_CAMERA_ARM = 170.0
 CANDIDATE_B_CAMERA_PROBE = 5.0
 CANDIDATE_B_CAMERA_TARGET_Z = 18.0
+CANDIDATE_B_CAMERA_RETRACT_SPEED = 30.0
+CANDIDATE_B_CAMERA_EXTEND_SPEED = 5.0
+CANDIDATE_B_CAMERA_MIN_SAFE_RADIUS_MULTIPLIER = 2.0
+CANDIDATE_B_CAMERA_CLOSE_THRESHOLD = 0.55
+CANDIDATE_B_CAMERA_CLOSE_VERTICAL_HALF_HEIGHT_MULTIPLIER = 1.0
+CANDIDATE_B_CAMERA_CLOSE_BLEND_SPEED = 8.0
 
 
 def create_blueprint(asset_name, parent_class):
@@ -86,6 +92,9 @@ def configure_candidate_assets():
     mesh = player_cdo.get_editor_property("mesh")
     movement = player_cdo.get_editor_property("character_movement")
     camera_boom = player_cdo.get_editor_property("camera_boom")
+    close_space_camera = player_cdo.get_editor_property(
+        "close_space_camera_component"
+    )
     capsule.set_capsule_size(
         CANDIDATE_B_RADIUS, CANDIDATE_B_HALF_HEIGHT, True
     )
@@ -124,11 +133,42 @@ def configure_candidate_assets():
         "target_arm_length", CANDIDATE_B_CAMERA_ARM
     )
     camera_boom.set_editor_property("probe_size", CANDIDATE_B_CAMERA_PROBE)
-    # Keep a fully retracted test camera above the 30-uu capsule instead of inside it.
+    # Candidate B opts into the local resolver; production defaults stay unchanged.
     camera_boom.set_editor_property(
         "target_offset", unreal.Vector(0.0, 0.0, CANDIDATE_B_CAMERA_TARGET_Z)
     )
-    camera_boom.set_editor_property("do_collision_test", True)
+    camera_boom.set_editor_property("do_collision_test", False)
+    close_space_camera.set_editor_property("close_space_camera_enabled", True)
+    close_space_camera.set_editor_property(
+        "desired_arm_length", CANDIDATE_B_CAMERA_ARM
+    )
+    close_space_camera.set_editor_property(
+        "camera_probe_radius", CANDIDATE_B_CAMERA_PROBE
+    )
+    close_space_camera.set_editor_property(
+        "camera_retract_speed", CANDIDATE_B_CAMERA_RETRACT_SPEED
+    )
+    close_space_camera.set_editor_property(
+        "camera_extend_speed", CANDIDATE_B_CAMERA_EXTEND_SPEED
+    )
+    close_space_camera.set_editor_property(
+        "min_safe_distance_radius_multiplier",
+        CANDIDATE_B_CAMERA_MIN_SAFE_RADIUS_MULTIPLIER,
+    )
+    close_space_camera.set_editor_property(
+        "close_space_threshold", CANDIDATE_B_CAMERA_CLOSE_THRESHOLD
+    )
+    close_space_camera.set_editor_property(
+        "close_space_vertical_offset_half_height_multiplier",
+        CANDIDATE_B_CAMERA_CLOSE_VERTICAL_HALF_HEIGHT_MULTIPLIER,
+    )
+    close_space_camera.set_editor_property(
+        "close_space_blend_speed", CANDIDATE_B_CAMERA_CLOSE_BLEND_SPEED
+    )
+    close_space_camera.set_editor_property(
+        "open_space_target_offset",
+        unreal.Vector(0.0, 0.0, CANDIDATE_B_CAMERA_TARGET_Z),
+    )
     unreal.BlueprintEditorLibrary.compile_blueprint(candidate_b)
     unreal.EditorAssetLibrary.save_loaded_asset(candidate_b)
 

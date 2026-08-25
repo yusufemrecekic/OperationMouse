@@ -10,6 +10,7 @@ class UInputAction;
 class UInputMappingContext;
 class UOMInteractionComponent;
 class UOMCarryComponent;
+class UOMCloseSpaceCameraComponent;
 class UOMTraversalComponent;
 class USceneComponent;
 class USpringArmComponent;
@@ -74,6 +75,10 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** Optional local-only close-space resolver; disabled by default and enabled by calibration/production profiles. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UOMCloseSpaceCameraComponent> CloseSpaceCameraComponent;
 
 	/** Stable gameplay attachment point; final grip placement remains a visual-design task. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Operation Mouse|Carry", meta = (AllowPrivateAccess = "true"))

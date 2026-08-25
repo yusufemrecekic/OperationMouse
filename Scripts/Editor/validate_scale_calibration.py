@@ -61,6 +61,9 @@ capsule_b = candidate_b_cdo.get_editor_property("capsule_component")
 mesh_b = candidate_b_cdo.get_editor_property("mesh")
 movement_b = candidate_b_cdo.get_editor_property("character_movement")
 camera_b = candidate_b_cdo.get_editor_property("camera_boom")
+close_space_camera_b = candidate_b_cdo.get_editor_property(
+    "close_space_camera_component"
+)
 if abs(capsule_b.get_unscaled_capsule_radius() - 7.5) > 0.01:
     fail("Candidate B capsule radius is not 7.5 uu")
 if abs(capsule_b.get_unscaled_capsule_half_height() - 15.0) > 0.01:
@@ -93,8 +96,27 @@ if abs(camera_b.get_editor_property("probe_size") - 5.0) > 0.01:
 camera_target = camera_b.get_editor_property("target_offset")
 if abs(camera_target.z - 18.0) > 0.01:
     fail(f"Candidate B camera target Z is wrong: {camera_target}")
-if not camera_b.get_editor_property("do_collision_test"):
-    fail("Candidate B camera collision is disabled")
+if camera_b.get_editor_property("do_collision_test"):
+    fail("Candidate B SpringArm collision must defer to the close-space resolver")
+if not close_space_camera_b.get_editor_property("close_space_camera_enabled"):
+    fail("Candidate B close-space camera resolver is disabled")
+expected_camera = {
+    "desired_arm_length": 170.0,
+    "camera_probe_radius": 5.0,
+    "camera_retract_speed": 30.0,
+    "camera_extend_speed": 5.0,
+    "min_safe_distance_radius_multiplier": 2.0,
+    "close_space_threshold": 0.55,
+    "close_space_vertical_offset_half_height_multiplier": 1.0,
+    "close_space_blend_speed": 8.0,
+}
+for property_name, expected in expected_camera.items():
+    actual = close_space_camera_b.get_editor_property(property_name)
+    if abs(actual - expected) > 0.01:
+        fail(f"Candidate B camera {property_name} is {actual}, expected {expected}")
+open_offset = close_space_camera_b.get_editor_property("open_space_target_offset")
+if abs(open_offset.z - 18.0) > 0.01:
+    fail(f"Candidate B close-space open offset is wrong: {open_offset}")
 
 game_mode_cdo = unreal.get_default_object(game_mode.generated_class())
 if game_mode_cdo.get_editor_property("default_pawn_class") != candidate_b.generated_class():

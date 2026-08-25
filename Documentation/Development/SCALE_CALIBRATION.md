@@ -3,7 +3,7 @@
 ## Status
 
 - Candidate A comparison profile: **PRESERVED / NOT ACCEPTED**
-- Candidate B active profile: **IMPLEMENTED / MANUAL REVIEW PENDING**
+- Candidate B active profile: **PROVISIONAL SCALE DIRECTION / CAMERA RETEST PENDING**
 - Targeted structural validation: **PASSED**
 - Map Check: **0 errors / 0 warnings**
 - Manual scale review: **PENDING**
@@ -58,14 +58,26 @@ GameMode no longer spawns it by default.
 | Expected jump apex at default 980 gravity | approximately 30.6 uu |
 | Camera TargetArmLength | 170 uu |
 | SpringArm probe size | 5 uu |
-| SpringArm target offset Z | 18 uu |
+| Open-space camera pivot Z | 18 uu |
+| Camera retract / extend rate | 30 / 5 per second |
+| Minimum safe distance | capsule radius x 2.0 |
+| Close-space threshold | 0.55 compression ratio |
+| Maximum adaptive pivot rise | capsule half-height x 1.0 |
 
-The smaller camera probe keeps collision enabled while allowing a technically
-useful retest of 25–40-uu passages. The target pivot sits 18 uu above the Actor
-origin, just above the 30-uu standing capsule, so full retraction does not put
-the test camera inside the Character body. Standard SpringArm collision can
-still retract abruptly when there is no valid camera space; advanced
-obstruction, fade or alternate camera modes remain post-scale-lock work.
+Candidate B opts into `UOMCloseSpaceCameraComponent`; the reusable component is
+disabled by default on the production Character. It owns a local-only 5-uu
+camera-channel sphere sweep and keeps the desired 170-uu open distance separate
+from the obstruction-limited distance. Retraction is fast and collision-clamped,
+while expansion is slower to avoid wall-edge popping. Compression below 0.55
+smoothly raises the pivot by at most one scaled capsule half-height. The minimum
+readable distance derives from scaled capsule radius, so later mouse-scale
+calibration does not require absolute collision distances in C++.
+
+If geometry leaves less than two scaled capsule radii of camera space, only the
+owning local player's mesh is hidden with hysteresis until safe space returns.
+No camera state, RPC, gameplay transform or remote mesh visibility is changed.
+This fallback is intentionally minimal; final production materials/fade remain
+an Ali visual decision after the scale and camera behavior are accepted.
 
 ## Map
 
@@ -109,8 +121,8 @@ collision tolerances and network behavior retain their existing values.
 2. **Heavy Carry startup clearance:** Zone H exposes the pre-existing case where
    state reaches 2/2 before lift when a holder is extremely close. Stepping
    backward remains the recovery.
-3. Candidate B camera settings are test-only; final production camera behavior
-   remains undecided.
+3. Candidate B camera foundation values are test-only; open-space, wall,
+   under-table and 25/30/40-uu passage camera review remains pending.
 4. Production Interaction range remains undecided. Current qualitative target:
    approximately 1.5–2 mouse body lengths.
 5. Production Carry distance/clearance and Heavy Carry spacing remain undecided.
@@ -122,10 +134,13 @@ collision tolerances and network behavior retain their existing values.
 2. Use normal PIE for the first Candidate B review.
 3. Judge Candidate B beside the human dining table and chair.
 4. Judge Walk/Sprint acceleration, top speed and stopping.
-5. Inspect the camera under the table and low-clearance route.
-6. Retest the 25, 30 and 40-uu passages.
-7. Compare 5, 10, 15 and 20-uu step/ledge behavior.
-8. Judge Interaction feel at the 40–120-uu surface-distance markers.
+5. In open space, walk/sprint and rotate yaw through 180 degrees.
+6. Back toward a wall, then rotate beside a wall and watch retract/extend.
+7. Inspect the camera under the table and low-clearance route.
+8. Enter the 40, 30 and 25-uu passages and rotate 180 degrees in each.
+9. Exit each obstruction into open space and verify smooth restoration.
+10. Compare 5, 10, 15 and 20-uu step/ledge behavior.
+11. Judge Interaction feel at the 40–120-uu surface-distance markers.
 
 Do not mark a final mouse scale until Ali and Yusuf record the visual and
 mechanical results together. Gamepad manual evidence remains pending.

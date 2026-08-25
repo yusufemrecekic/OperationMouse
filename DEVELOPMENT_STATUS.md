@@ -8,9 +8,9 @@ Mouse Scale Calibration
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Candidate A preserved after manual rejection; test-only Candidate B and improved `L_ScaleCalibration` human/Interaction references implemented; automated structural validation and Map Check PASSED; Candidate B manual review pending
+Current: Candidate A preserved after manual rejection; Candidate B scale/movement is the strong provisional direction; a local-only close-space camera foundation is implemented and automated validation/Map Check PASSED; manual camera review pending
 
-Next: Ali/Yusuf visual and mechanical review of active Candidate B before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
+Next: Ali/Yusuf Candidate B camera review in open space, walls, under-table and 25/30/40-uu passages before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
 
 ## Completed
 
@@ -93,6 +93,7 @@ Next: Ali/Yusuf visual and mechanical review of active Candidate B before any pr
 - Dedicated `/Game/OperationMouse/Tests/Scale/L_ScaleCalibration` contains nine labeled technical zones for human references, passage widths, ledges/mantle, safe gaps, camera/clearance, real Interaction, real Normal Carry, real Heavy Carry and two-player spacing. Targeted structural validation PASSED and Map Check reported 0 errors / 0 warnings; manual scale review remains pending.
 - Candidate A manual review found the 45.12-uu visual too large against human furniture and exposed unsuitable inherited movement, camera and step values. It remains available as `BP_ScaleCalibrationMouse_A`. Active Candidate B uses a test-only 7.5 x 15-uu capsule, 0.15 visual scale (approximately 27.07 uu), 270/400-uu movement, 14-uu step, 245-uu JumpZ and 170-uu SpringArm without changing production defaults.
 - Zone A now uses recognizable human dining table/chair, kitchen counter, doorway and 180-uu silhouette references. Zone F measures 40/60/80/100/120 uu from marked capsule front to target surface. Candidate B targeted validation PASSED and Map Check reported 0 errors / 0 warnings; manual Candidate B review remains pending.
+- Candidate B manual scale/movement review established 27.07-uu visual scale, 7.5 x 15-uu capsule and current test movement as the strong provisional direction without changing production tuning. The remaining camera failure was traced to standard SpringArm collision snapping its arm directly between changing obstruction surfaces. `UOMCloseSpaceCameraComponent` now provides a default-disabled, local-only desired/resolved camera distance, owner-ignored sphere sweep, fast collision-safe retraction, slower expansion, capsule-derived safe distance, adaptive close-space pivot and last-resort owning-mesh fallback. Editor build, targeted Scale validation and Map Check (0 errors / 0 warnings) PASSED; manual camera review remains required.
 
 ## Repository
 
@@ -150,7 +151,7 @@ Branch: `feature/yusuf-scale-calibration`
 
 Main files: `/Game/OperationMouse/Tests/Scale/`, `Scripts/Editor/configure_scale_calibration.py`, `Scripts/Editor/validate_scale_calibration.py`
 
-Status: CANDIDATE A REJECTED/PRESERVED - CANDIDATE B AUTOMATED VALIDATION PASSED - MANUAL CANDIDATE B REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: CANDIDATE A REJECTED/PRESERVED - CANDIDATE B PROVISIONAL SCALE/MOVEMENT DIRECTION - CLOSE-SPACE CAMERA AUTOMATED VALIDATION PASSED - MANUAL CAMERA REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 
