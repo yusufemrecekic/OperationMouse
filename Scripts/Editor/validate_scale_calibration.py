@@ -5,7 +5,8 @@ import unreal
 
 ROOT = "/Game/OperationMouse/Tests/Scale"
 MAP_PATH = f"{ROOT}/L_ScaleCalibration"
-PLAYER_PATH = f"{ROOT}/BP_ScaleCalibrationMouse"
+PLAYER_A_PATH = f"{ROOT}/BP_ScaleCalibrationMouse_A"
+PLAYER_B_PATH = f"{ROOT}/BP_ScaleCalibrationMouse_B"
 GAME_MODE_PATH = f"{ROOT}/BP_ScaleCalibrationGameMode"
 PROTOTYPE_PLAYER_PATH = (
     "/Game/OperationMouse/Characters/Prototype/Blueprints/"
@@ -18,41 +19,86 @@ def fail(message):
     raise RuntimeError(message)
 
 
-for path in (MAP_PATH, PLAYER_PATH, GAME_MODE_PATH):
+for path in (MAP_PATH, PLAYER_A_PATH, PLAYER_B_PATH, GAME_MODE_PATH):
     if not unreal.EditorAssetLibrary.does_asset_exist(path):
         fail(f"Missing calibration asset: {path}")
 
-player = unreal.load_asset(PLAYER_PATH)
+candidate_a = unreal.load_asset(PLAYER_A_PATH)
+candidate_b = unreal.load_asset(PLAYER_B_PATH)
 game_mode = unreal.load_asset(GAME_MODE_PATH)
 prototype_player = unreal.load_asset(PROTOTYPE_PLAYER_PATH)
-if None in (player, game_mode, prototype_player):
+if None in (candidate_a, candidate_b, game_mode, prototype_player):
     fail("Calibration or prototype Blueprint failed to load")
-unreal.BlueprintEditorLibrary.compile_blueprint(player)
+unreal.BlueprintEditorLibrary.compile_blueprint(candidate_a)
+unreal.BlueprintEditorLibrary.compile_blueprint(candidate_b)
 unreal.BlueprintEditorLibrary.compile_blueprint(game_mode)
-player_cdo = unreal.get_default_object(player.generated_class())
-player_asset_data = unreal.EditorAssetLibrary.find_asset_data(PLAYER_PATH)
-parent_class_tag = player_asset_data.get_tag_value("ParentClass") or ""
-if "BP_OMMouseCharacter_Prototype_C" not in parent_class_tag:
-    fail("Calibration player is not derived from the prototype gameplay Character")
-capsule = player_cdo.get_editor_property("capsule_component")
-mesh = player_cdo.get_editor_property("mesh")
-movement = player_cdo.get_editor_property("character_movement")
-if abs(capsule.get_unscaled_capsule_radius() - 11.0) > 0.01:
+
+for path in (PLAYER_A_PATH, PLAYER_B_PATH):
+    asset_data = unreal.EditorAssetLibrary.find_asset_data(path)
+    parent_class_tag = asset_data.get_tag_value("ParentClass") or ""
+    if "BP_OMMouseCharacter_Prototype_C" not in parent_class_tag:
+        fail(f"Calibration player is not derived from prototype: {path}")
+
+candidate_a_cdo = unreal.get_default_object(candidate_a.generated_class())
+capsule_a = candidate_a_cdo.get_editor_property("capsule_component")
+mesh_a = candidate_a_cdo.get_editor_property("mesh")
+movement_a = candidate_a_cdo.get_editor_property("character_movement")
+if abs(capsule_a.get_unscaled_capsule_radius() - 11.0) > 0.01:
     fail("Candidate A capsule radius is not 11 uu")
-if abs(capsule.get_unscaled_capsule_half_height() - 24.0) > 0.01:
+if abs(capsule_a.get_unscaled_capsule_half_height() - 24.0) > 0.01:
     fail("Candidate A capsule half-height is not 24 uu")
-mesh_scale = mesh.get_editor_property("relative_scale3d")
-mesh_location = mesh.get_editor_property("relative_location")
-if max(abs(mesh_scale.x - 0.25), abs(mesh_scale.y - 0.25), abs(mesh_scale.z - 0.25)) > 0.001:
-    fail(f"Candidate A visual scale is wrong: {mesh_scale}")
-if abs(mesh_location.z + 24.0) > 0.01:
-    fail(f"Candidate A mesh floor alignment is wrong: {mesh_location}")
-if abs(movement.get_editor_property("crouched_half_height") - 12.0) > 0.01:
+mesh_a_scale = mesh_a.get_editor_property("relative_scale3d")
+mesh_a_location = mesh_a.get_editor_property("relative_location")
+if max(abs(mesh_a_scale.x - 0.25), abs(mesh_a_scale.y - 0.25), abs(mesh_a_scale.z - 0.25)) > 0.001:
+    fail(f"Candidate A visual scale is wrong: {mesh_a_scale}")
+if abs(mesh_a_location.z + 24.0) > 0.01:
+    fail(f"Candidate A mesh floor alignment is wrong: {mesh_a_location}")
+if abs(movement_a.get_editor_property("crouched_half_height") - 12.0) > 0.01:
     fail("Candidate A test-only crouched half-height is not 12 uu")
 
+candidate_b_cdo = unreal.get_default_object(candidate_b.generated_class())
+capsule_b = candidate_b_cdo.get_editor_property("capsule_component")
+mesh_b = candidate_b_cdo.get_editor_property("mesh")
+movement_b = candidate_b_cdo.get_editor_property("character_movement")
+camera_b = candidate_b_cdo.get_editor_property("camera_boom")
+if abs(capsule_b.get_unscaled_capsule_radius() - 7.5) > 0.01:
+    fail("Candidate B capsule radius is not 7.5 uu")
+if abs(capsule_b.get_unscaled_capsule_half_height() - 15.0) > 0.01:
+    fail("Candidate B capsule half-height is not 15 uu")
+mesh_b_scale = mesh_b.get_editor_property("relative_scale3d")
+mesh_b_location = mesh_b.get_editor_property("relative_location")
+if max(abs(mesh_b_scale.x - 0.15), abs(mesh_b_scale.y - 0.15), abs(mesh_b_scale.z - 0.15)) > 0.001:
+    fail(f"Candidate B visual scale is wrong: {mesh_b_scale}")
+if abs(mesh_b_location.z + 15.0) > 0.01:
+    fail(f"Candidate B mesh floor alignment is wrong: {mesh_b_location}")
+expected_movement = {
+    "crouched_half_height": 8.0,
+    "max_acceleration": 1400.0,
+    "braking_deceleration_walking": 1600.0,
+    "max_step_height": 14.0,
+    "jump_z_velocity": 245.0,
+}
+for property_name, expected in expected_movement.items():
+    actual = movement_b.get_editor_property(property_name)
+    if abs(actual - expected) > 0.01:
+        fail(f"Candidate B {property_name} is {actual}, expected {expected}")
+if abs(candidate_b_cdo.get_editor_property("normal_walk_speed") - 270.0) > 0.01:
+    fail("Candidate B walk speed is not 270 uu/s")
+if abs(candidate_b_cdo.get_editor_property("sprint_speed") - 400.0) > 0.01:
+    fail("Candidate B sprint speed is not 400 uu/s")
+if abs(camera_b.get_editor_property("target_arm_length") - 170.0) > 0.01:
+    fail("Candidate B camera arm is not 170 uu")
+if abs(camera_b.get_editor_property("probe_size") - 5.0) > 0.01:
+    fail("Candidate B camera probe is not 5 uu")
+camera_target = camera_b.get_editor_property("target_offset")
+if abs(camera_target.z - 18.0) > 0.01:
+    fail(f"Candidate B camera target Z is wrong: {camera_target}")
+if not camera_b.get_editor_property("do_collision_test"):
+    fail("Candidate B camera collision is disabled")
+
 game_mode_cdo = unreal.get_default_object(game_mode.generated_class())
-if game_mode_cdo.get_editor_property("default_pawn_class") != player.generated_class():
-    fail("Calibration GameMode does not spawn Candidate A")
+if game_mode_cdo.get_editor_property("default_pawn_class") != candidate_b.generated_class():
+    fail("Calibration GameMode does not spawn active Candidate B")
 
 level_subsystem = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 actor_subsystem = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -81,8 +127,26 @@ if len(normal_cargo) < 3:
     fail(f"Expected three Normal Carry sizes, found {len(normal_cargo)}")
 if len(heavy_cargo) < 1:
     fail("Heavy Carry fixture is missing")
-if len(interactions) < 5:
-    fail(f"Expected four range fixtures plus Reset, found {len(interactions)}")
+if len(interactions) < 6:
+    fail(f"Expected five range fixtures plus Reset, found {len(interactions)}")
+
+actor_labels = {actor.get_actor_label() for actor in actors}
+required_human_references = {
+    "Scale_A_CounterTop90",
+    "Scale_A_DiningTop75",
+    "Scale_A_ChairSeat45",
+    "Scale_A_DoorHeader",
+    "Scale_A_HumanBody180",
+}
+missing_human = sorted(required_human_references - actor_labels)
+if missing_human:
+    fail(f"Human reference blockout is incomplete: {missing_human}")
+required_distance_markers = {
+    f"Scale_F_CapsuleFront_{distance}" for distance in (40, 60, 80, 100, 120)
+}
+missing_markers = sorted(required_distance_markers - actor_labels)
+if missing_markers:
+    fail(f"Interaction surface-distance markers are incomplete: {missing_markers}")
 
 labels = [actor for actor in actors if actor.get_actor_label().startswith("Scale_Label_")]
 if len(labels) < 35:
@@ -100,7 +164,8 @@ if not world_settings.get_editor_property("force_no_precomputed_lighting"):
     fail("Calibration map depends on baked lighting")
 unreal.SystemLibrary.execute_console_command(world, "MAP CHECK")
 unreal.log(
-    "OM_SCALE_VALIDATION|PASS|candidate=11x24|visual_scale=0.25|"
+    "OM_SCALE_VALIDATION|PASS|active=B|candidate_a=preserved|"
+    "candidate_b=7.5x15|visual_scale=0.15|walk=270|sprint=400|"
     f"zones=9|starts={len(starts)}|normal_cargo={len(normal_cargo)}|"
     f"heavy_cargo={len(heavy_cargo)}|interactions={len(interactions)}|"
     "production_tuning=unchanged|map_check=executed"

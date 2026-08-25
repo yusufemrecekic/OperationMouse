@@ -8,9 +8,9 @@ Mouse Scale Calibration
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Test-only Candidate A calibration player and `L_ScaleCalibration` technical harness implemented; automated structural validation and Map Check PASSED; manual scale review pending
+Current: Candidate A preserved after manual rejection; test-only Candidate B and improved `L_ScaleCalibration` human/Interaction references implemented; automated structural validation and Map Check PASSED; Candidate B manual review pending
 
-Next: Ali/Yusuf visual and mechanical review of Candidate A before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
+Next: Ali/Yusuf visual and mechanical review of active Candidate B before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
 
 ## Completed
 
@@ -91,6 +91,8 @@ Next: Ali/Yusuf visual and mechanical review of Candidate A before any productio
 - Carry networking/presentation closeout manual acceptance PASSED in two-player Listen Server testing: both Heavy Carry final-holder release orders reconcile to the server-owned world state, and Normal Carry's collisionless client visual now follows the rendered local Carry target without the previous owning-client lag/rubber-band while gameplay transform, sweep, collision, obstruction and Drop authority remain server-owned.
 - Test-only Scale Calibration Candidate A derives from the modular prototype Character with an 11-uu capsule radius, 24-uu capsule half-height, 0.25 visual scale, -24-uu mesh floor alignment and approximately 45.12-uu rendered height; no production gameplay tuning changed.
 - Dedicated `/Game/OperationMouse/Tests/Scale/L_ScaleCalibration` contains nine labeled technical zones for human references, passage widths, ledges/mantle, safe gaps, camera/clearance, real Interaction, real Normal Carry, real Heavy Carry and two-player spacing. Targeted structural validation PASSED and Map Check reported 0 errors / 0 warnings; manual scale review remains pending.
+- Candidate A manual review found the 45.12-uu visual too large against human furniture and exposed unsuitable inherited movement, camera and step values. It remains available as `BP_ScaleCalibrationMouse_A`. Active Candidate B uses a test-only 7.5 x 15-uu capsule, 0.15 visual scale (approximately 27.07 uu), 270/400-uu movement, 14-uu step, 245-uu JumpZ and 170-uu SpringArm without changing production defaults.
+- Zone A now uses recognizable human dining table/chair, kitchen counter, doorway and 180-uu silhouette references. Zone F measures 40/60/80/100/120 uu from marked capsule front to target surface. Candidate B targeted validation PASSED and Map Check reported 0 errors / 0 warnings; manual Candidate B review remains pending.
 
 ## Repository
 
@@ -116,6 +118,7 @@ Repository setup: Complete
 - Sprint 3 Yusuf gameplay acceptance passed, but it is not full multiplayer/network acceptance.
 - Mission gameplay has a minimal server-authoritative public snapshot and uses the established Interaction Server RPC; Hilmi still owns production objective rules, multi-player contention, disconnect/recovery, late-state, adverse-network behavior and formal network evidence.
 - Known pre-existing Heavy Carry startup-clearance issue: if a holder begins extremely close to the cargo, state may reach 2/2 before the cargo lifts. Stepping slightly backward recovers without Reset. This was present before the Carry presentation branch, is not a regression, and is deferred to Scale Calibration where holder slots, capsule scale, clearance and cargo dimensions will be tuned together.
+- Known post-scale physics tuning issue: Character contact can launch physics props unrealistically; mass ratios and CharacterMovement push/touch/vertical impulse behavior require a separate focused pass after scale lock.
 - The authoritative GDD v3.3 / Production Control v5.1 package was supplied as production direction but its controlled source files are not yet tracked under `Documentation/Design/`.
 
 ## Technical Decisions
@@ -147,7 +150,7 @@ Branch: `feature/yusuf-scale-calibration`
 
 Main files: `/Game/OperationMouse/Tests/Scale/`, `Scripts/Editor/configure_scale_calibration.py`, `Scripts/Editor/validate_scale_calibration.py`
 
-Status: SCALE CALIBRATION HARNESS AUTOMATED VALIDATION PASSED - MANUAL SCALE REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: CANDIDATE A REJECTED/PRESERVED - CANDIDATE B AUTOMATED VALIDATION PASSED - MANUAL CANDIDATE B REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

@@ -1,4 +1,4 @@
-"""Create the isolated mouse-scale Candidate A Blueprint and technical calibration map."""
+"""Create isolated Candidate A/B player profiles and the scale calibration map."""
 
 import unreal
 
@@ -6,7 +6,9 @@ import unreal
 SCALE_ROOT = "/Game/OperationMouse/Tests/Scale"
 MATERIAL_ROOT = f"{SCALE_ROOT}/Materials"
 MAP_PATH = f"{SCALE_ROOT}/L_ScaleCalibration"
-PLAYER_PATH = f"{SCALE_ROOT}/BP_ScaleCalibrationMouse"
+LEGACY_PLAYER_PATH = f"{SCALE_ROOT}/BP_ScaleCalibrationMouse"
+PLAYER_A_PATH = f"{SCALE_ROOT}/BP_ScaleCalibrationMouse_A"
+PLAYER_B_PATH = f"{SCALE_ROOT}/BP_ScaleCalibrationMouse_B"
 GAME_MODE_PATH = f"{SCALE_ROOT}/BP_ScaleCalibrationGameMode"
 PROTOTYPE_PLAYER_PATH = (
     "/Game/OperationMouse/Characters/Prototype/Blueprints/"
@@ -21,11 +23,20 @@ FIXTURE_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Fixture"
 MARKER_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Marker"
 HARNESS_TAG = unreal.Name("ScaleCalibrationHarness")
 
-CANDIDATE_RADIUS = 11.0
-CANDIDATE_HALF_HEIGHT = 24.0
-CANDIDATE_CROUCHED_HALF_HEIGHT = 12.0
-CANDIDATE_VISUAL_SCALE = 0.25
-CANDIDATE_MESH_Z = -24.0
+CANDIDATE_B_RADIUS = 7.5
+CANDIDATE_B_HALF_HEIGHT = 15.0
+CANDIDATE_B_CROUCHED_HALF_HEIGHT = 8.0
+CANDIDATE_B_VISUAL_SCALE = 0.15
+CANDIDATE_B_MESH_Z = -15.0
+CANDIDATE_B_WALK_SPEED = 270.0
+CANDIDATE_B_SPRINT_SPEED = 400.0
+CANDIDATE_B_MAX_ACCELERATION = 1400.0
+CANDIDATE_B_BRAKING_DECELERATION = 1600.0
+CANDIDATE_B_MAX_STEP_HEIGHT = 14.0
+CANDIDATE_B_JUMP_Z = 245.0
+CANDIDATE_B_CAMERA_ARM = 170.0
+CANDIDATE_B_CAMERA_PROBE = 5.0
+CANDIDATE_B_CAMERA_TARGET_Z = 18.0
 
 
 def create_blueprint(asset_name, parent_class):
@@ -51,42 +62,86 @@ def configure_candidate_assets():
 
     unreal.BlueprintEditorLibrary.compile_blueprint(prototype_player)
     unreal.BlueprintEditorLibrary.compile_blueprint(prototype_game_mode)
-    player = create_blueprint(
-        "BP_ScaleCalibrationMouse", prototype_player.generated_class()
+    # Preserve the exact Candidate A asset produced by the first calibration pass.
+    if (
+        unreal.EditorAssetLibrary.does_asset_exist(LEGACY_PLAYER_PATH)
+        and not unreal.EditorAssetLibrary.does_asset_exist(PLAYER_A_PATH)
+    ):
+        if not unreal.EditorAssetLibrary.rename_asset(
+            LEGACY_PLAYER_PATH, PLAYER_A_PATH
+        ):
+            raise RuntimeError("Could not preserve legacy Candidate A asset")
+
+    candidate_a = unreal.load_asset(PLAYER_A_PATH)
+    if candidate_a is None:
+        raise RuntimeError("Candidate A comparison asset is missing")
+    unreal.BlueprintEditorLibrary.compile_blueprint(candidate_a)
+    unreal.EditorAssetLibrary.save_loaded_asset(candidate_a)
+
+    candidate_b = create_blueprint(
+        "BP_ScaleCalibrationMouse_B", prototype_player.generated_class()
     )
-    player_cdo = unreal.get_default_object(player.generated_class())
+    player_cdo = unreal.get_default_object(candidate_b.generated_class())
     capsule = player_cdo.get_editor_property("capsule_component")
     mesh = player_cdo.get_editor_property("mesh")
     movement = player_cdo.get_editor_property("character_movement")
-    capsule.set_capsule_size(CANDIDATE_RADIUS, CANDIDATE_HALF_HEIGHT, True)
+    camera_boom = player_cdo.get_editor_property("camera_boom")
+    capsule.set_capsule_size(
+        CANDIDATE_B_RADIUS, CANDIDATE_B_HALF_HEIGHT, True
+    )
     mesh.set_editor_property(
         "relative_scale3d",
         unreal.Vector(
-            CANDIDATE_VISUAL_SCALE,
-            CANDIDATE_VISUAL_SCALE,
-            CANDIDATE_VISUAL_SCALE,
+            CANDIDATE_B_VISUAL_SCALE,
+            CANDIDATE_B_VISUAL_SCALE,
+            CANDIDATE_B_VISUAL_SCALE,
         ),
     )
     mesh.set_editor_property(
-        "relative_location", unreal.Vector(0.0, 0.0, CANDIDATE_MESH_Z)
+        "relative_location", unreal.Vector(0.0, 0.0, CANDIDATE_B_MESH_Z)
     )
     mesh.set_editor_property(
         "relative_rotation", unreal.Rotator(roll=0.0, pitch=0.0, yaw=-90.0)
     )
     movement.set_editor_property(
-        "crouched_half_height", CANDIDATE_CROUCHED_HALF_HEIGHT
+        "crouched_half_height", CANDIDATE_B_CROUCHED_HALF_HEIGHT
     )
-    unreal.BlueprintEditorLibrary.compile_blueprint(player)
-    unreal.EditorAssetLibrary.save_loaded_asset(player)
+    movement.set_editor_property(
+        "max_acceleration", CANDIDATE_B_MAX_ACCELERATION
+    )
+    movement.set_editor_property(
+        "braking_deceleration_walking", CANDIDATE_B_BRAKING_DECELERATION
+    )
+    movement.set_editor_property(
+        "max_step_height", CANDIDATE_B_MAX_STEP_HEIGHT
+    )
+    movement.set_editor_property("jump_z_velocity", CANDIDATE_B_JUMP_Z)
+    player_cdo.set_editor_property(
+        "normal_walk_speed", CANDIDATE_B_WALK_SPEED
+    )
+    player_cdo.set_editor_property("sprint_speed", CANDIDATE_B_SPRINT_SPEED)
+    camera_boom.set_editor_property(
+        "target_arm_length", CANDIDATE_B_CAMERA_ARM
+    )
+    camera_boom.set_editor_property("probe_size", CANDIDATE_B_CAMERA_PROBE)
+    # Keep a fully retracted test camera above the 30-uu capsule instead of inside it.
+    camera_boom.set_editor_property(
+        "target_offset", unreal.Vector(0.0, 0.0, CANDIDATE_B_CAMERA_TARGET_Z)
+    )
+    camera_boom.set_editor_property("do_collision_test", True)
+    unreal.BlueprintEditorLibrary.compile_blueprint(candidate_b)
+    unreal.EditorAssetLibrary.save_loaded_asset(candidate_b)
 
     game_mode = create_blueprint(
         "BP_ScaleCalibrationGameMode", prototype_game_mode.generated_class()
     )
     game_mode_cdo = unreal.get_default_object(game_mode.generated_class())
-    game_mode_cdo.set_editor_property("default_pawn_class", player.generated_class())
+    game_mode_cdo.set_editor_property(
+        "default_pawn_class", candidate_b.generated_class()
+    )
     unreal.BlueprintEditorLibrary.compile_blueprint(game_mode)
     unreal.EditorAssetLibrary.save_loaded_asset(game_mode)
-    return player, game_mode
+    return candidate_a, candidate_b, game_mode
 
 
 def get_or_create_material(asset_path, color):
@@ -238,17 +293,28 @@ def build_zone_a(actor_subsystem, cube, floor, fixture):
     center = (-2000.0, -1000.0)
     add_zone_floor(actor_subsystem, cube, floor, zone, center, (900.0, 800.0))
     add_text(actor_subsystem, "Scale_Label_ZoneA", "A - HUMAN REFERENCES", unreal.Vector(-2000, -1320, 130), zone, 26)
-    references = [
-        ("Counter90", (-2200, -1080, 85), (300, 80, 10), "COUNTER TOP 90 UU"),
-        ("Table75", (-2200, -850, 70), (260, 70, 10), "WORK SURFACE 75 UU"),
-        ("ToeKick10", (-1800, -1160, 5), (220, 50, 10), "TOE KICK 10 UU"),
-        ("FurnitureLeg75", (-1750, -920, 37.5), (22, 22, 75), "LEG 75 UU"),
-        ("CabinetWall220", (-1600, -1000, 110), (30, 260, 220), "CABINET WALL 220 UU"),
-    ]
-    for name, location, dimensions, text in references:
-        add_cube(actor_subsystem, cube, fixture, f"Scale_A_{name}", unreal.Vector(*location), dimensions, zone)
-        label_z = location[2] + dimensions[2] * 0.5 + 25.0
-        add_text(actor_subsystem, f"Scale_Label_A_{name}", text, unreal.Vector(location[0], location[1], label_z), zone, 14)
+    # Recognizable human blockout: counter, dining table/chair and a 180-uu silhouette.
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_CounterBase", unreal.Vector(-2200, -1210, 40), (300, 80, 80), zone)
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_CounterTop90", unreal.Vector(-2200, -1210, 85), (320, 100, 10), zone)
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_ToeKick10", unreal.Vector(-2200, -1150, 5), (260, 30, 10), zone)
+    add_text(actor_subsystem, "Scale_Label_A_Counter", "KITCHEN COUNTER - 90 UU", unreal.Vector(-2200, -1210, 120), zone, 14)
+
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_DiningTop75", unreal.Vector(-2150, -900, 70), (260, 150, 10), zone)
+    for x in (-2250.0, -2050.0):
+        for y in (-950.0, -850.0):
+            add_cube(actor_subsystem, cube, fixture, f"Scale_A_TableLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 35), (12, 12, 70), zone)
+    add_text(actor_subsystem, "Scale_Label_A_Table", "HUMAN DINING TABLE - 75 UU", unreal.Vector(-2150, -900, 110), zone, 14)
+
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairSeat45", unreal.Vector(-1770, -900, 42), (70, 70, 6), zone)
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_ChairBack", unreal.Vector(-1802, -900, 78), (6, 70, 72), zone)
+    for x in (-1795.0, -1745.0):
+        for y in (-925.0, -875.0):
+            add_cube(actor_subsystem, cube, fixture, f"Scale_A_ChairLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 21), (8, 8, 42), zone)
+    add_text(actor_subsystem, "Scale_Label_A_Chair", "HUMAN CHAIR - SEAT 45 UU", unreal.Vector(-1770, -900, 125), zone, 14)
+
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_HumanBody180", unreal.Vector(-1630, -1190, 90), (35, 22, 130), zone)
+    add_cube(actor_subsystem, cube, fixture, "Scale_A_HumanHead180", unreal.Vector(-1630, -1190, 165), (30, 30, 30), zone)
+    add_text(actor_subsystem, "Scale_Label_A_Human", "HUMAN HEIGHT REF - 180 UU", unreal.Vector(-1630, -1190, 205), zone, 14)
     # Human doorway reference: 90 uu clear width and 210 uu clear height.
     add_cube(actor_subsystem, cube, fixture, "Scale_A_DoorLeft", unreal.Vector(-2000, -650, 105), (30, 30, 210), zone)
     add_cube(actor_subsystem, cube, fixture, "Scale_A_DoorRight", unreal.Vector(-1880, -650, 105), (30, 30, 210), zone)
@@ -319,20 +385,24 @@ def build_zone_f(actor_subsystem, cube, floor, marker, interaction_class):
     center = (-700.0, 350.0)
     add_zone_floor(actor_subsystem, cube, floor, zone, center, (1000.0, 850.0))
     add_text(actor_subsystem, "Scale_Label_ZoneF", "F - INTERACTION RANGE", unreal.Vector(-700, -10, 120), zone, 24)
-    distances = (50, 100, 200, 300)
+    distances = (40, 60, 80, 100, 120)
     roles = (
         unreal.OMTestInteractionRole.BUTTON,
         unreal.OMTestInteractionRole.PICKUP,
         unreal.OMTestInteractionRole.DOOR,
         unreal.OMTestInteractionRole.FAIL,
+        unreal.OMTestInteractionRole.GENERIC,
     )
     for index, (distance, role) in enumerate(zip(distances, roles)):
-        lane_y = 120.0 + index * 150.0
-        start_x = -1050.0
-        add_cube(actor_subsystem, cube, marker, f"Scale_F_Start_{distance}", unreal.Vector(start_x, lane_y, 1), (10, 70, 2), zone)
-        target = spawn(actor_subsystem, interaction_class, f"Scale_F_Interact_{distance}", unreal.Vector(start_x + distance, lane_y, 25), unreal.Rotator(yaw=180.0), zone=zone)
+        lane_y = 80.0 + index * 130.0
+        capsule_front_x = -1080.0
+        # The test proxy is a 75-uu cube. Its near surface is 37.5 uu before its center.
+        target_center_x = capsule_front_x + distance + 37.5
+        add_cube(actor_subsystem, cube, marker, f"Scale_F_CapsuleFront_{distance}", unreal.Vector(capsule_front_x, lane_y, 1), (3, 70, 2), zone)
+        target = spawn(actor_subsystem, interaction_class, f"Scale_F_Interact_{distance}", unreal.Vector(target_center_x, lane_y, 37.5), unreal.Rotator(yaw=180.0), zone=zone)
         target.set_editor_property("test_role", role)
-        add_text(actor_subsystem, f"Scale_Label_F_{distance}", f"{distance} UU", unreal.Vector(start_x + distance * 0.5, lane_y, 65), zone, 14)
+        add_text(actor_subsystem, f"Scale_Label_F_{distance}", f"CAPSULE FRONT -> SURFACE = {distance} UU", unreal.Vector(capsule_front_x + distance * 0.5, lane_y, 105), zone, 12)
+    add_text(actor_subsystem, "Scale_Label_F_Note", "FEEL TARGET: 1.5-2 MOUSE BODY LENGTHS", unreal.Vector(-700, 700, 90), zone, 13)
 
 
 def build_zone_g(actor_subsystem, cube, floor, fixture_material, carryable_class):
@@ -471,10 +541,11 @@ def configure_map(game_mode):
     if not level_subsystem.save_current_level():
         raise RuntimeError("Could not save Scale Calibration map")
     unreal.log(
-        "OM_SCALE_CONFIG|PASS|radius=11|halfheight=24|visual_scale=0.25|"
-        "mesh_z=-24|visual_height=45.118|zones=A-I"
+        "OM_SCALE_CONFIG|PASS|active=B|candidate_a=preserved|radius=7.5|"
+        "halfheight=15|visual_scale=0.15|mesh_z=-15|"
+        "visual_height=27.071|walk=270|sprint=400|jump_z=245|zones=A-I"
     )
 
 
-_, calibration_game_mode = configure_candidate_assets()
+_, _, calibration_game_mode = configure_candidate_assets()
 configure_map(calibration_game_mode)
