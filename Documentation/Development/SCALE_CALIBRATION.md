@@ -58,6 +58,8 @@ GameMode no longer spawns it by default.
 | Expected jump apex at default 980 gravity | approximately 30.6 uu |
 | Camera TargetArmLength | 170 uu |
 | SpringArm probe size | 5 uu |
+| Collision safety padding | 2 uu |
+| Project perspective near clip | 2 uu |
 | Open-space camera pivot Z | 18 uu |
 | Camera retract / extend rate | 30 / 5 per second |
 | Minimum safe distance | capsule radius x 2.0 |
@@ -78,6 +80,15 @@ owning local player's mesh is hidden with hysteresis until safe space returns.
 No camera state, RPC, gameplay transform or remote mesh visibility is changed.
 This fallback is intentionally minimal; final production materials/fade remain
 an Ali visual decision after the scale and camera behavior are accepted.
+
+The UE 5.8 inherited perspective near clip was 10 uu. A 5-uu sweep therefore
+left the camera center collision-safe while its near plane could begin beyond
+the contacted wall, especially during oblique yaw at thin edges. The project
+now overrides near clip to 2 uu and keeps an additional configurable 2-uu gap
+behind sphere-sweep contact. This remains comfortably above an extreme
+sub-unit clip distance, limits the depth-precision cost, and fits the current
+27-uu character / 25–40-uu passage calibration context. Close-space fixtures
+continue to block `ECC_Camera`; no passage dimensions were changed.
 
 ## Map
 

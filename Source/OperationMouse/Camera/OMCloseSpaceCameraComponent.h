@@ -36,6 +36,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.1"))
 	float CameraProbeRadius = 5.0f;
 
+	/** Extra clearance kept behind a sweep contact so the perspective near plane cannot expose geometry beyond thin wall edges. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.0"))
+	float CameraCollisionPadding = 2.0f;
+
 	/** Interpolation rate used while obstruction shortens the desired arm. Collision safety remains a hard ceiling. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0.0"))
 	float CameraRetractSpeed = 30.0f;

@@ -52,10 +52,11 @@ void UOMCloseSpaceCameraComponent::InitializeLocalResolver()
 	UE_LOG(
 		LogOperationMouse,
 		Log,
-		TEXT("[CameraFoundation] Enabled Owner=%s Desired=%.1f Probe=%.1f Retract=%.1f Extend=%.1f"),
+		TEXT("[CameraFoundation] Enabled Owner=%s Desired=%.1f Probe=%.1f Padding=%.1f Retract=%.1f Extend=%.1f"),
 		*GetNameSafe(CharacterOwner),
 		DesiredArmLength,
 		CameraProbeRadius,
+		CameraCollisionPadding,
 		CameraRetractSpeed,
 		CameraExtendSpeed);
 }
@@ -165,7 +166,14 @@ float UOMCloseSpaceCameraComponent::FindObstructionLimit(
 		ECC_Camera,
 		FCollisionShape::MakeSphere(FMath::Max(CameraProbeRadius, 0.1f)),
 		QueryParams);
-	return bBlocked ? FMath::Clamp(Hit.Distance, 0.0f, DesiredArmLength) : DesiredArmLength;
+	if (!bBlocked)
+	{
+		return DesiredArmLength;
+	}
+
+	// Hit.Distance places the swept sphere exactly at first contact. Keep a small
+	// calibrated gap so the perspective near plane remains on the visible side.
+	return FMath::Clamp(Hit.Distance - CameraCollisionPadding, 0.0f, DesiredArmLength);
 }
 
 void UOMCloseSpaceCameraComponent::SetOwnerMeshFallback(bool bShouldHide)

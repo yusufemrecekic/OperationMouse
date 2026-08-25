@@ -36,6 +36,7 @@ CANDIDATE_B_MAX_STEP_HEIGHT = 14.0
 CANDIDATE_B_JUMP_Z = 245.0
 CANDIDATE_B_CAMERA_ARM = 170.0
 CANDIDATE_B_CAMERA_PROBE = 5.0
+CANDIDATE_B_CAMERA_COLLISION_PADDING = 2.0
 CANDIDATE_B_CAMERA_TARGET_Z = 18.0
 CANDIDATE_B_CAMERA_RETRACT_SPEED = 30.0
 CANDIDATE_B_CAMERA_EXTEND_SPEED = 5.0
@@ -144,6 +145,9 @@ def configure_candidate_assets():
     )
     close_space_camera.set_editor_property(
         "camera_probe_radius", CANDIDATE_B_CAMERA_PROBE
+    )
+    close_space_camera.set_editor_property(
+        "camera_collision_padding", CANDIDATE_B_CAMERA_COLLISION_PADDING
     )
     close_space_camera.set_editor_property(
         "camera_retract_speed", CANDIDATE_B_CAMERA_RETRACT_SPEED

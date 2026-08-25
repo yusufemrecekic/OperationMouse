@@ -1,5 +1,7 @@
 """Targeted structural validation for the Scale Calibration technical harness."""
 
+import configparser
+import os
 import unreal
 
 
@@ -17,6 +19,13 @@ PROTOTYPE_PLAYER_PATH = (
 def fail(message):
     unreal.log_error(f"OM_SCALE_VALIDATION|FAIL|{message}")
     raise RuntimeError(message)
+
+
+engine_config = configparser.ConfigParser(strict=False)
+engine_config.read(os.path.join(unreal.Paths.project_config_dir(), "DefaultEngine.ini"))
+near_clip = engine_config.getfloat("/Script/Engine.Engine", "NearClipPlane", fallback=-1.0)
+if abs(near_clip - 2.0) > 0.01:
+    fail(f"Project perspective NearClipPlane is {near_clip}, expected 2.0 uu")
 
 
 for path in (MAP_PATH, PLAYER_A_PATH, PLAYER_B_PATH, GAME_MODE_PATH):
@@ -103,6 +112,7 @@ if not close_space_camera_b.get_editor_property("close_space_camera_enabled"):
 expected_camera = {
     "desired_arm_length": 170.0,
     "camera_probe_radius": 5.0,
+    "camera_collision_padding": 2.0,
     "camera_retract_speed": 30.0,
     "camera_extend_speed": 5.0,
     "min_safe_distance_radius_multiplier": 2.0,
@@ -135,6 +145,19 @@ tags = {str(tag) for actor in actors for tag in list(actor.get_editor_property("
 missing_zones = [f"ScaleZone{letter}" for letter in "ABCDEFGHI" if f"ScaleZone{letter}" not in tags]
 if missing_zones:
     fail(f"Missing calibration zones: {missing_zones}")
+
+camera_wall_labels = {
+    "Scale_E_CorridorLeft",
+    "Scale_E_CorridorRight",
+    "Scale_E_LowRoof",
+}
+camera_walls = [actor for actor in actors if actor.get_actor_label() in camera_wall_labels]
+if len(camera_walls) != len(camera_wall_labels):
+    fail("Camera close-space collision fixtures are incomplete")
+for wall in camera_walls:
+    component = wall.get_editor_property("static_mesh_component")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Camera fixture does not block ECC_Camera: {wall.get_actor_label()}")
 
 starts = [actor for actor in actors if isinstance(actor, unreal.PlayerStart)]
 carryable_class = unreal.load_class(None, "/Script/OperationMouse.OMCarryableActor")
