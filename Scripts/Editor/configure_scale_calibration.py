@@ -22,7 +22,6 @@ FLOOR_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Floor"
 FIXTURE_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Fixture"
 MARKER_MATERIAL_PATH = f"{MATERIAL_ROOT}/MI_ScaleCalibration_Marker"
 HARNESS_TAG = unreal.Name("ScaleCalibrationHarness")
-SOFT_CAMERA_OCCLUDER_TAG = unreal.Name("OMCameraSoftOccluder")
 
 CANDIDATE_B_RADIUS = 7.5
 CANDIDATE_B_HALF_HEIGHT = 15.0
@@ -247,13 +246,6 @@ def add_cube(actor_subsystem, cube, material, label, location, dimensions, zone)
     return actor
 
 
-def mark_soft_camera_occluder(actor):
-    tags = list(actor.get_editor_property("tags"))
-    if SOFT_CAMERA_OCCLUDER_TAG not in tags:
-        tags.append(SOFT_CAMERA_OCCLUDER_TAG)
-        actor.set_editor_property("tags", tags)
-
-
 def add_text(actor_subsystem, label, text, location, zone, size=20.0):
     actor = spawn(
         actor_subsystem,
@@ -366,8 +358,13 @@ def build_zone_a(actor_subsystem, cube, floor, fixture):
             chair_parts.append(
                 add_cube(actor_subsystem, cube, fixture, f"Scale_A_ChairLeg_{int(x)}_{int(y)}", unreal.Vector(x, y, 21), (8, 8, 42), zone)
             )
+    # Explicit camera-composition policy for this porous furniture fixture only.
+    # Pawn/world/physics responses stay on the cube's existing blocking profile.
     for chair_part in chair_parts:
-        mark_soft_camera_occluder(chair_part)
+        chair_part.get_editor_property("static_mesh_component").set_collision_response_to_channel(
+            unreal.CollisionChannel.ECC_CAMERA,
+            unreal.CollisionResponseType.ECR_IGNORE,
+        )
     add_text(actor_subsystem, "Scale_Label_A_Chair", "HUMAN CHAIR - SEAT 45 UU", unreal.Vector(-1770, -900, 125), zone, 14)
 
     add_cube(actor_subsystem, cube, fixture, "Scale_A_HumanBody180", unreal.Vector(-1630, -1190, 90), (35, 22, 130), zone)

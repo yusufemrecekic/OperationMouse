@@ -119,7 +119,6 @@ expected_camera = {
     "close_space_threshold": 0.55,
     "close_space_vertical_offset_half_height_multiplier": 1.0,
     "close_space_blend_speed": 8.0,
-    "max_soft_occluders_per_sweep": 4,
 }
 for property_name, expected in expected_camera.items():
     actual = close_space_camera_b.get_editor_property(property_name)
@@ -199,28 +198,58 @@ chair_labels = {
 chair_parts = [actor for actor in actors if actor.get_actor_label() in chair_labels]
 if len(chair_parts) != len(chair_labels):
     fail(f"Chair component actors are incomplete: {len(chair_parts)}")
+gameplay_channels = (
+    unreal.CollisionChannel.ECC_WORLD_STATIC,
+    unreal.CollisionChannel.ECC_WORLD_DYNAMIC,
+    unreal.CollisionChannel.ECC_PAWN,
+    unreal.CollisionChannel.ECC_PHYSICS_BODY,
+)
 for chair_part in chair_parts:
-    if "OMCameraSoftOccluder" not in {
-        str(tag) for tag in chair_part.get_editor_property("tags")
-    }:
-        fail(f"Chair part is not an explicit soft camera occluder: {chair_part.get_actor_label()}")
     component = chair_part.get_editor_property("static_mesh_component")
-    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
-        fail(f"Soft chair part no longer blocks ECC_Camera for explicit classification: {chair_part.get_actor_label()}")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_IGNORE:
+        fail(f"Chair part still blocks ECC_Camera: {chair_part.get_actor_label()}")
+    if any(
+        component.get_collision_response_to_channel(channel)
+        != unreal.CollisionResponseType.ECR_BLOCK
+        for channel in gameplay_channels
+    ):
+        fail(f"Chair gameplay/physics collision changed: {chair_part.get_actor_label()}")
 
-soft_actor_labels = {
-    actor.get_actor_label()
-    for actor in actors
-    if "OMCameraSoftOccluder" in {
-        str(tag) for tag in actor.get_editor_property("tags")
-    }
+hard_camera_labels = {
+    "Scale_A_DiningTop75",
+    "Scale_E_CorridorLeft",
+    "Scale_E_CorridorRight",
+    "Scale_E_LowRoof",
 }
-if soft_actor_labels != chair_labels:
-    fail(f"Unexpected soft camera occluder classification: {sorted(soft_actor_labels)}")
+hard_camera_actors = [
+    actor for actor in actors if actor.get_actor_label() in hard_camera_labels
+]
+if len(hard_camera_actors) != len(hard_camera_labels):
+    fail("Hard camera fixtures are incomplete")
+for hard_actor in hard_camera_actors:
+    component = hard_actor.get_editor_property("static_mesh_component")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Hard fixture does not block ECC_Camera: {hard_actor.get_actor_label()}")
 
-for wall in camera_walls:
-    if "OMCameraSoftOccluder" in {str(tag) for tag in wall.get_editor_property("tags")}:
-        fail(f"Hard camera fixture was incorrectly marked soft: {wall.get_actor_label()}")
+passage_walls = [
+    actor for actor in actors if actor.get_actor_label().startswith("Scale_B_")
+]
+if len(passage_walls) != 12:
+    fail(f"Passage wall fixtures are incomplete: {len(passage_walls)}")
+for wall in passage_walls:
+    component = wall.get_editor_property("static_mesh_component")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Passage wall does not block ECC_Camera: {wall.get_actor_label()}")
+
+zone_floors = [
+    actor for actor in actors if actor.get_actor_label().endswith("_Floor")
+]
+if not zone_floors:
+    fail("Scale calibration floors are missing")
+for floor_actor in zone_floors:
+    component = floor_actor.get_editor_property("static_mesh_component")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Calibration floor does not block ECC_Camera: {floor_actor.get_actor_label()}")
 required_distance_markers = {
     f"Scale_F_CapsuleFront_{distance}" for distance in (40, 60, 80, 100, 120)
 }

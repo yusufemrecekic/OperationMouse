@@ -81,17 +81,6 @@ No camera state, RPC, gameplay transform or remote mesh visibility is changed.
 This fallback is intentionally minimal; final production materials/fade remain
 an Ali visual decision after the scale and camera behavior are accepted.
 
-The human-reference chair is the explicit soft-camera-occluder foundation test.
-Its seat, back and four leg actors carry the `OMCameraSoftOccluder` tag. Only
-tagged actors/components are skipped by obstruction-distance resolution and
-hidden from the owning local player's view while they obstruct composition.
-Untagged walls, passage fixtures, floors and the table remain hard
-`ECC_Camera` blockers. Each sweep skips at most four soft components, so a hard
-blocker behind foreground furniture still limits camera distance. Components
-restore when they stop obstructing, ownership changes, the camera component
-deactivates or play ends. Ali/Yusuf may later replace this foundation hide/show
-presentation with dither or material fade without changing its opt-in contract.
-
 The UE 5.8 inherited perspective near clip was 10 uu. A 5-uu sweep therefore
 left the camera center collision-safe while its near plane could begin beyond
 the contacted wall, especially during oblique yaw at thin edges. The project
@@ -100,6 +89,14 @@ behind sphere-sweep contact. This remains comfortably above an extreme
 sub-unit clip distance, limits the depth-precision cost, and fits the current
 27-uu character / 25–40-uu passage calibration context. Close-space fixtures
 continue to block `ECC_Camera`; no passage dimensions were changed.
+
+The human-reference chair uses an explicit collision-policy exception for camera
+composition: its seat, back and four leg components ignore only `ECC_Camera`.
+They remain rendered and retain their blocking Pawn, WorldStatic, WorldDynamic
+and PhysicsBody responses. Walls, floors, roofs, passage fixtures and the table
+remain hard camera blockers. This is a per-fixture calibration decision, not an
+automatic furniture classifier or a global production collision change. Future
+Ali/Yusuf integration will choose Block or Ignore per production asset.
 
 ## Map
 

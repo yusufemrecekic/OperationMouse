@@ -5,8 +5,6 @@
 #include "OMCloseSpaceCameraComponent.generated.h"
 
 class ACharacter;
-class APlayerController;
-class UPrimitiveComponent;
 class USpringArmComponent;
 
 /**
@@ -24,7 +22,6 @@ public:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void Deactivate() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/** Enables the custom local resolver. Disabled by default to preserve existing production camera behavior. */
@@ -71,20 +68,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation")
 	FVector OpenSpaceTargetOffset = FVector(0.0f, 0.0f, 18.0f);
 
-	/** Bounded number of explicitly tagged foreground components skipped by each obstruction sweep. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Operation Mouse|Camera Foundation", meta = (ClampMin = "0", ClampMax = "8"))
-	int32 MaxSoftOccludersPerSweep = 4;
-
 private:
 	void InitializeLocalResolver();
-	float FindObstructionLimit(
-		const FVector& Pivot,
-		const FRotator& CameraRotation,
-		TSet<TWeakObjectPtr<UPrimitiveComponent>>& OutSoftOccluders) const;
-	bool IsSoftCameraOccluder(const UPrimitiveComponent* Component) const;
-	void UpdateLocalSoftOccluderVisibility(
-		const TSet<TWeakObjectPtr<UPrimitiveComponent>>& SoftOccluders);
-	void RestoreLocalSoftOccluders();
+	float FindObstructionLimit(const FVector& Pivot, const FRotator& CameraRotation) const;
 	void SetOwnerMeshFallback(bool bShouldHide);
 
 	TObjectPtr<ACharacter> CharacterOwner;
@@ -95,6 +81,4 @@ private:
 	bool bOriginalOwnerNoSee = false;
 	bool bResolverInitialized = false;
 	bool bOwnerMeshFallbackActive = false;
-	TWeakObjectPtr<APlayerController> VisibilityPlayerController;
-	TSet<TWeakObjectPtr<UPrimitiveComponent>> ManagedHiddenSoftOccluders;
 };
