@@ -246,6 +246,36 @@ def add_cube(actor_subsystem, cube, material, label, location, dimensions, zone)
     return actor
 
 
+def add_camera_only_box(actor_subsystem, label, location, dimensions, zone):
+    actor = spawn(
+        actor_subsystem,
+        unreal.TriggerBox,
+        label,
+        location,
+        zone=zone,
+    )
+    component = actor.get_component_by_class(unreal.BoxComponent)
+    if component is None:
+        raise RuntimeError(f"Camera proxy has no BoxComponent: {label}")
+    component.set_box_extent(
+        unreal.Vector(
+            dimensions[0] * 0.5,
+            dimensions[1] * 0.5,
+            dimensions[2] * 0.5,
+        ),
+        True,
+    )
+    component.set_collision_enabled(unreal.CollisionEnabled.QUERY_ONLY)
+    component.set_collision_response_to_all_channels(
+        unreal.CollisionResponseType.ECR_IGNORE
+    )
+    component.set_collision_response_to_channel(
+        unreal.CollisionChannel.ECC_CAMERA,
+        unreal.CollisionResponseType.ECR_BLOCK,
+    )
+    return actor
+
+
 def add_text(actor_subsystem, label, text, location, zone, size=20.0):
     actor = spawn(
         actor_subsystem,
@@ -365,6 +395,22 @@ def build_zone_a(actor_subsystem, cube, floor, fixture):
             unreal.CollisionChannel.ECC_CAMERA,
             unreal.CollisionResponseType.ECR_IGNORE,
         )
+    # Two broad camera-only masses preserve the chair's L silhouette without
+    # treating four porous legs or the empty volume above the seat as blockers.
+    add_camera_only_box(
+        actor_subsystem,
+        "Scale_A_ChairCameraProxy_Seat",
+        unreal.Vector(-1770, -900, 42),
+        (74, 74, 10),
+        zone,
+    )
+    add_camera_only_box(
+        actor_subsystem,
+        "Scale_A_ChairCameraProxy_Back",
+        unreal.Vector(-1802, -900, 78),
+        (10, 74, 76),
+        zone,
+    )
     add_text(actor_subsystem, "Scale_Label_A_Chair", "HUMAN CHAIR - SEAT 45 UU", unreal.Vector(-1770, -900, 125), zone, 14)
 
     add_cube(actor_subsystem, cube, fixture, "Scale_A_HumanBody180", unreal.Vector(-1630, -1190, 90), (35, 22, 130), zone)

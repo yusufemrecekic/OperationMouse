@@ -215,6 +215,39 @@ for chair_part in chair_parts:
     ):
         fail(f"Chair gameplay/physics collision changed: {chair_part.get_actor_label()}")
 
+expected_camera_proxies = {
+    "Scale_A_ChairCameraProxy_Seat": (unreal.Vector(-1770, -900, 42), unreal.Vector(37, 37, 5)),
+    "Scale_A_ChairCameraProxy_Back": (unreal.Vector(-1802, -900, 78), unreal.Vector(5, 37, 38)),
+}
+camera_proxies = {
+    actor.get_actor_label(): actor
+    for actor in actors
+    if actor.get_actor_label() in expected_camera_proxies
+}
+if set(camera_proxies) != set(expected_camera_proxies):
+    fail(f"Chair camera proxies are incomplete: {sorted(camera_proxies)}")
+for label, (expected_location, expected_extent) in expected_camera_proxies.items():
+    proxy = camera_proxies[label]
+    component = proxy.get_component_by_class(unreal.BoxComponent)
+    if component is None:
+        fail(f"Chair camera proxy has no BoxComponent: {label}")
+    location = proxy.get_actor_location()
+    extent = component.get_unscaled_box_extent()
+    if (location - expected_location).length() > 0.01:
+        fail(f"Chair camera proxy location is wrong: {label} {location}")
+    if (extent - expected_extent).length() > 0.01:
+        fail(f"Chair camera proxy extent is wrong: {label} {extent}")
+    if component.get_collision_enabled() != unreal.CollisionEnabled.QUERY_ONLY:
+        fail(f"Chair camera proxy is not query-only: {label}")
+    if component.get_collision_response_to_channel(unreal.CollisionChannel.ECC_CAMERA) != unreal.CollisionResponseType.ECR_BLOCK:
+        fail(f"Chair camera proxy does not block ECC_Camera: {label}")
+    if any(
+        component.get_collision_response_to_channel(channel)
+        != unreal.CollisionResponseType.ECR_IGNORE
+        for channel in gameplay_channels
+    ):
+        fail(f"Chair camera proxy affects gameplay/physics collision: {label}")
+
 hard_camera_labels = {
     "Scale_A_DiningTop75",
     "Scale_E_CorridorLeft",
@@ -277,6 +310,6 @@ unreal.log(
     "candidate_b=7.5x15|visual_scale=0.15|walk=270|sprint=400|"
     f"zones=9|starts={len(starts)}|normal_cargo={len(normal_cargo)}|"
     f"heavy_cargo={len(heavy_cargo)}|interactions={len(interactions)}|"
-    "production_tuning=unchanged|map_check=executed"
+    "chair_camera_proxies=2|production_tuning=unchanged|map_check=executed"
 )
 unreal.log("OM_SCALE_VALIDATION|FINAL|PASS")

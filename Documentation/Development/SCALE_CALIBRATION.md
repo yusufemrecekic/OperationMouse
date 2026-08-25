@@ -98,6 +98,16 @@ remain hard camera blockers. This is a per-fixture calibration decision, not an
 automatic furniture classifier or a global production collision change. Future
 Ali/Yusuf integration will choose Block or Ignore per production asset.
 
+Because an always-rendered Camera-Ignore chair can still cut across the view,
+the calibration fixture adds two invisible, query-only camera proxy boxes: a
+74 x 74 x 10-uu seat mass centered at `(-1770, -900, 42)` and a 10 x 74 x
+76-uu back mass centered at `(-1802, -900, 78)`. Two shapes are intentional:
+one bounding box around the L-shaped seat/back would incorrectly block the
+large empty volume above the seat. The proxies block only `ECC_Camera`; all
+gameplay/physics channels ignore them. Individual legs have no camera proxy.
+This explicit visual collision plus simplified Camera-only proxy is the future
+Ali/Yusuf authoring guideline for selected complex or porous furniture.
+
 ## Map
 
 Package: `/Game/OperationMouse/Tests/Scale/L_ScaleCalibration`
