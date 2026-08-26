@@ -160,8 +160,8 @@ if abs(170.0 * close_space_camera_b.get_editor_property("crouch_arm_multiplier")
 
 expected_physics_profile = {
     "mass": 10.0,
-    "initial_push_force_factor": 50.0,
-    "push_force_factor": 500.0,
+    "initial_push_force_factor": 150.0,
+    "push_force_factor": 5000.0,
     "touch_force_factor": 0.0,
     "min_touch_force": -1.0,
     "max_touch_force": 0.0,

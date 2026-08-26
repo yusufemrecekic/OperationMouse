@@ -69,7 +69,7 @@ GameMode no longer spawns it by default.
 | Provisional crouch arm | standing desired arm x 0.60 (102 uu) |
 | Posture blend rate | 8 per second |
 | Character gameplay mass | 10 kg |
-| Initial / sustained push force | 50 / 500 |
+| Initial / sustained push force | 150 / 5000 |
 | Touch force | 0 (disables artificial upward touch impulse) |
 | Repulsion force | 0.25 |
 
@@ -162,8 +162,24 @@ PIE displacement measurements are not claimed because contact angle, solver
 substeps and frame timing make this graybox test nondeterministic; the confirmed
 baseline symptom was occasional upward/forward missile-like launch.
 
-Candidate B alone now uses a 10-kg gameplay mass, 50 initial push, 500 sustained
-push, zero touch force, Min/MaxTouchForce -1/0 and 0.25 repulsion. Push and touch
+The first manual physics review rejected the initial `50 / 500` profile: Light,
+Medium and Heavy all appeared nearly static. Fixture collision, serialized mass
+overrides and damping were correct; the principal suppression was the 1500x
+reduction from UE's inherited sustained push value. `AddForceAtLocation` remains
+the normal body-waking blocking-contact path, so no separate wake mechanic was
+added.
+
+The focused calibration comparison was:
+
+| Profile | Initial push | Sustained push | Repulsion | Nominal response |
+| --- | ---: | ---: | ---: | --- |
+| Low (manual FAIL) | 50 | 500 | 0.25 | Light/Medium/Heavy too weak |
+| Moderate (selected) | 150 | 5000 | 0.25 | 10x sustained force with natural 2/10/50-kg hierarchy |
+| High (upper bound, not selected) | 300 | 15000 | 0.25 | Avoided until Moderate is manually reviewed |
+
+These are force/mass and engine-path comparisons, not fabricated deterministic
+PIE measurements. Candidate B now uses a 10-kg gameplay mass, 150 initial push,
+5000 sustained push, zero touch force, Min/MaxTouchForce -1/0 and 0.25 repulsion. Push and touch
 mass scaling are disabled; velocity scaling remains enabled. Zero touch force
 removes the artificial upward overlap impulse while ordinary blocking contact
 still supplies controlled physical comedy. Leaving push mass scaling disabled
