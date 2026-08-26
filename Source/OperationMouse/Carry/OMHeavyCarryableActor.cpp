@@ -60,6 +60,8 @@ FOMInteractionInfo AOMHeavyCarryableActor::GetInteractionInfo_Implementation(AAc
 	FOMInteractionInfo Info;
 	Info.Prompt = HeavyCarryState == EOMHeavyCarryState::WaitingForSecondHolder
 		? NSLOCTEXT("OperationMouse", "JoinHeavyCarryPrompt", "Join Heavy Carry")
+		: HeavyCarryState == EOMHeavyCarryState::WaitingForValidPositions
+			? NSLOCTEXT("OperationMouse", "AdjustHeavyCarryPrompt", "Adjust Position")
 		: NSLOCTEXT("OperationMouse", "GrabHeavyCarryPrompt", "Grab Heavy Object");
 	Info.Type = EOMInteractionType::Instant;
 	Info.MaximumDistance = 240.0f;
@@ -114,8 +116,7 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 	}
 	else
 	{
-		SetHeavyCarryState(EOMHeavyCarryState::Carrying);
-		SetMovementPenaltyForAllHolders(true);
+		SetHeavyCarryState(EOMHeavyCarryState::WaitingForValidPositions);
 		if (UStaticMeshComponent* HeavyMesh = FindComponentByClass<UStaticMeshComponent>())
 		{
 			HeavyMesh->SetSimulatePhysics(false);
@@ -123,13 +124,25 @@ bool AOMHeavyCarryableActor::BeginCarry(UOMCarryComponent* NewCarrier, USceneCom
 			HeavyMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		}
 		RefreshCarrierCollisionIgnores();
-		AlignCarriersToSlots();
-		UpdateHeavyCarryTransform();
+		const bool bAligned = AlignCarriersToSlots();
+		bWaitingForHolderAdjustment = !bAligned;
+		if (!bAligned)
+		{
+			const TArray<AOMMouseCharacter*> Holders = GetPresentationHolders();
+			FailedAlignmentFirstHolderLocation = Holders.IsValidIndex(0) && IsValid(Holders[0])
+				? Holders[0]->GetActorLocation() : FVector::ZeroVector;
+			FailedAlignmentSecondHolderLocation = Holders.IsValidIndex(1) && IsValid(Holders[1])
+				? Holders[1]->GetActorLocation() : FVector::ZeroVector;
+		}
+		else
+		{
+			TryEnterCarrying();
+		}
 	}
 
 	UE_LOG(LogOperationMouse, Log, TEXT("[HeavyCarry][Joined] Carrier=%s Target=%s Holders=%d State=%s GameplayOnly=true"),
 		*GetNameSafe(NewCarrier->GetOwner()), *GetName(), ActiveCarriers.Num(),
-		HeavyCarryState == EOMHeavyCarryState::Carrying ? TEXT("Carrying") : TEXT("Waiting"));
+		*UEnum::GetValueAsString(HeavyCarryState));
 	SyncReplicatedCarryState();
 	return true;
 }
@@ -148,12 +161,14 @@ bool AOMHeavyCarryableActor::EndCarry(UOMCarryComponent* RequestingCarrier, cons
 
 	if (ActiveCarriers.Num() == 1)
 	{
+		bWaitingForHolderAdjustment = false;
 		FreezeAtCurrentTransform();
 		SetHeavyCarryState(EOMHeavyCarryState::WaitingForSecondHolder);
 		RefreshCarrierCollisionIgnores();
 	}
 	else
 	{
+		bWaitingForHolderAdjustment = false;
 		FTransform DropTransform = GetActorTransform();
 		DropTransform.SetLocation(DropLocation);
 		DropTransform.SetRotation(FQuat::Identity);
@@ -213,6 +228,7 @@ void AOMHeavyCarryableActor::ResetToHome()
 		}
 	}
 	ActiveCarriers.Reset();
+	bWaitingForHolderAdjustment = false;
 	PublishAuthoritativeWorldPresentation(HeavyHomeTransform);
 	SetHeavyCarryState(EOMHeavyCarryState::Idle);
 	SyncReplicatedCarryState();
@@ -243,6 +259,33 @@ void AOMHeavyCarryableActor::Tick(float DeltaSeconds)
 		else if (bRemovedInvalidCarrier)
 		{
 			RefreshCarrierCollisionIgnores();
+		}
+		return;
+	}
+	if (HeavyCarryState == EOMHeavyCarryState::WaitingForValidPositions)
+	{
+		if (ActiveCarriers.Num() < 2)
+		{
+			SetMovementPenaltyForAllHolders(false);
+			bWaitingForHolderAdjustment = false;
+			if (ActiveCarriers.Num() == 1)
+			{
+				FreezeAtCurrentTransform();
+				SetHeavyCarryState(EOMHeavyCarryState::WaitingForSecondHolder);
+				RefreshCarrierCollisionIgnores();
+			}
+			else
+			{
+				PublishAuthoritativeWorldPresentation(GetActorTransform());
+				SetHeavyCarryState(EOMHeavyCarryState::Idle);
+			}
+			return;
+		}
+
+		if (!bWaitingForHolderAdjustment || HaveHoldersAdjustedSinceFailedAlignment())
+		{
+			bWaitingForHolderAdjustment = false;
+			TryEnterCarrying();
 		}
 		return;
 	}
@@ -335,7 +378,9 @@ void AOMHeavyCarryableActor::RefreshCarrierCollisionIgnores()
 		AddCarrierMovementIgnore(Character, this);
 	}
 
-	if (HeavyCarryState == EOMHeavyCarryState::Carrying && HolderCharacters.Num() == 2)
+	if ((HeavyCarryState == EOMHeavyCarryState::Carrying
+		|| HeavyCarryState == EOMHeavyCarryState::WaitingForValidPositions)
+		&& HolderCharacters.Num() == 2)
 	{
 		AddCarrierMovementIgnore(HolderCharacters[0], HolderCharacters[1]);
 		AddCarrierMovementIgnore(HolderCharacters[1], HolderCharacters[0]);
@@ -424,13 +469,15 @@ void AOMHeavyCarryableActor::AddCarrierMovementIgnore(AOMMouseCharacter* SourceC
 	MovementIgnoreTargets.Add(TargetActor);
 }
 
-void AOMHeavyCarryableActor::AlignCarriersToSlots()
+bool AOMHeavyCarryableActor::AlignCarriersToSlots()
 {
 	if (ActiveCarriers.Num() != 2)
 	{
-		return;
+		return false;
 	}
 
+	bool bAllAligned = true;
+	const float AlignmentTolerance = GetHolderAlignmentTolerance();
 	for (int32 CarrierIndex = 0; CarrierIndex < ActiveCarriers.Num(); ++CarrierIndex)
 	{
 		UOMCarryComponent* Carrier = ActiveCarriers[CarrierIndex];
@@ -439,16 +486,99 @@ void AOMHeavyCarryableActor::AlignCarriersToSlots()
 		USceneComponent* Slot = GetSlotForCarrierIndex(CarrierIndex);
 		if (!IsValid(Character) || !IsValid(CharacterCarryPoint) || !IsValid(Slot))
 		{
+			bAllAligned = false;
 			continue;
 		}
 
 		const FVector AlignmentDelta = Slot->GetComponentLocation() - CharacterCarryPoint->GetComponentLocation();
+		FHitResult AlignmentHit;
 		Character->SetActorLocation(
 			Character->GetActorLocation() + AlignmentDelta,
 			true,
-			nullptr,
+			&AlignmentHit,
 			ETeleportType::None);
+		const float RemainingError = FVector::Dist(
+			CharacterCarryPoint->GetComponentLocation(),
+			Slot->GetComponentLocation());
+		if (AlignmentHit.bStartPenetrating || RemainingError > AlignmentTolerance)
+		{
+			bAllAligned = false;
+			UE_LOG(LogOperationMouse, Log,
+				TEXT("[HeavyCarry][Alignment] Target=%s Holder=%s Result=AdjustPosition Error=%.2f Tolerance=%.2f Hit=%s"),
+				*GetName(), *GetNameSafe(Character), RemainingError, AlignmentTolerance,
+				AlignmentHit.bBlockingHit ? *GetNameSafe(AlignmentHit.GetActor()) : TEXT("None"));
+		}
 	}
+	return bAllAligned;
+}
+
+bool AOMHeavyCarryableActor::TryEnterCarrying()
+{
+	if (!HasAuthority() || ActiveCarriers.Num() != 2)
+	{
+		return false;
+	}
+
+	FTransform DesiredTransform;
+	if (!BuildDesiredHeavyTransform(DesiredTransform))
+	{
+		SetHeavyCarryObstructed(true, FHitResult());
+		return false;
+	}
+
+	const FTransform OriginalTransform = GetActorTransform();
+	FHitResult Hit;
+	SetActorLocationAndRotation(
+		DesiredTransform.GetLocation(),
+		DesiredTransform.GetRotation(),
+		true,
+		&Hit,
+		ETeleportType::None);
+	const bool bReachedTarget = !Hit.bStartPenetrating
+		&& FVector::Dist(GetActorLocation(), DesiredTransform.GetLocation()) <= GetHolderAlignmentTolerance()
+		&& GetActorQuat().AngularDistance(DesiredTransform.GetRotation()) <= FMath::DegreesToRadians(2.0f);
+	if (!bReachedTarget)
+	{
+		SetActorTransform(OriginalTransform, false, nullptr, ETeleportType::TeleportPhysics);
+		SetHeavyCarryObstructed(true, Hit);
+		return false;
+	}
+
+	SetHeavyCarryObstructed(false, FHitResult());
+	SetHeavyCarryState(EOMHeavyCarryState::Carrying);
+	SetMovementPenaltyForAllHolders(true);
+	RefreshCarrierCollisionIgnores();
+	UE_LOG(LogOperationMouse, Log,
+		TEXT("[HeavyCarry][Startup] Target=%s Result=Carrying Holders=2"), *GetName());
+	return true;
+}
+
+bool AOMHeavyCarryableActor::HaveHoldersAdjustedSinceFailedAlignment() const
+{
+	const TArray<AOMMouseCharacter*> Holders = GetPresentationHolders();
+	if (Holders.Num() != 2 || !IsValid(Holders[0]) || !IsValid(Holders[1]))
+	{
+		return false;
+	}
+
+	const float RequiredAdjustment = GetHolderAlignmentTolerance();
+	return FVector::Dist2D(Holders[0]->GetActorLocation(), FailedAlignmentFirstHolderLocation) >= RequiredAdjustment
+		|| FVector::Dist2D(Holders[1]->GetActorLocation(), FailedAlignmentSecondHolderLocation) >= RequiredAdjustment;
+}
+
+float AOMHeavyCarryableActor::GetHolderAlignmentTolerance() const
+{
+	float SmallestCapsuleRadius = TNumericLimits<float>::Max();
+	for (AOMMouseCharacter* Holder : GetPresentationHolders())
+	{
+		if (const UCapsuleComponent* Capsule = IsValid(Holder) ? Holder->GetCapsuleComponent() : nullptr)
+		{
+			SmallestCapsuleRadius = FMath::Min(SmallestCapsuleRadius, Capsule->GetScaledCapsuleRadius());
+		}
+	}
+	return SmallestCapsuleRadius < TNumericLimits<float>::Max()
+		? SmallestCapsuleRadius * 0.25f
+		: UE_KINDA_SMALL_NUMBER;
 }
 
 void AOMHeavyCarryableActor::CacheHeavyPresentationIfNeeded()
@@ -608,38 +738,12 @@ void AOMHeavyCarryableActor::ApplyReplicatedIdleWorldPresentation()
 
 void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
 {
-	if (ActiveCarriers.Num() != 2)
-	{
-		return;
-	}
-	const USceneComponent* FirstPoint = ActiveCarriers[0]->GetCarryPoint();
-	const USceneComponent* SecondPoint = ActiveCarriers[1]->GetCarryPoint();
-	if (!IsValid(FirstPoint) || !IsValid(SecondPoint))
-	{
-		return;
-	}
-	const FVector FirstLocation = FirstPoint->GetComponentLocation();
-	const FVector SecondLocation = SecondPoint->GetComponentLocation();
-	const FVector HolderSeparation = SecondLocation - FirstLocation;
-	const float MinimumStableSeparation = GetMinimumStableHolderSeparation();
-	if (HolderSeparation.Size2D() < MinimumStableSeparation)
+	FTransform DesiredTransform;
+	if (!BuildDesiredHeavyTransform(DesiredTransform))
 	{
 		SetHeavyCarryObstructed(true, FHitResult());
 		return;
 	}
-
-	FTransform DesiredTransform = GetActorTransform();
-	if (HolderSeparation.SizeSquared2D() > UE_KINDA_SMALL_NUMBER)
-	{
-		const float TargetYaw = HolderSeparation.Rotation().Yaw - 90.0f;
-		DesiredTransform.SetRotation(FRotator(0.0f, TargetYaw, 0.0f).Quaternion());
-	}
-
-	const FVector SlotMidpointLocal =
-		(LeftCarrySlot->GetRelativeLocation() + RightCarrySlot->GetRelativeLocation()) * 0.5f;
-	const FVector DesiredMidpoint = (FirstLocation + SecondLocation) * 0.5f;
-	DesiredTransform.SetLocation(
-		DesiredMidpoint - DesiredTransform.TransformVector(SlotMidpointLocal));
 
 	FHitResult Hit;
 	SetActorLocationAndRotation(
@@ -648,7 +752,43 @@ void AOMHeavyCarryableActor::UpdateHeavyCarryTransform()
 		true,
 		&Hit,
 		ETeleportType::None);
-	SetHeavyCarryObstructed(Hit.bBlockingHit, Hit);
+	SetHeavyCarryObstructed(Hit.bBlockingHit || Hit.bStartPenetrating, Hit);
+}
+
+bool AOMHeavyCarryableActor::BuildDesiredHeavyTransform(FTransform& OutDesiredTransform) const
+{
+	if (ActiveCarriers.Num() != 2)
+	{
+		return false;
+	}
+	const USceneComponent* FirstPoint = ActiveCarriers[0]->GetCarryPoint();
+	const USceneComponent* SecondPoint = ActiveCarriers[1]->GetCarryPoint();
+	if (!IsValid(FirstPoint) || !IsValid(SecondPoint))
+	{
+		return false;
+	}
+	const FVector FirstLocation = FirstPoint->GetComponentLocation();
+	const FVector SecondLocation = SecondPoint->GetComponentLocation();
+	const FVector HolderSeparation = SecondLocation - FirstLocation;
+	const float MinimumStableSeparation = GetMinimumStableHolderSeparation();
+	if (HolderSeparation.Size2D() < MinimumStableSeparation)
+	{
+		return false;
+	}
+
+	OutDesiredTransform = GetActorTransform();
+	if (HolderSeparation.SizeSquared2D() > UE_KINDA_SMALL_NUMBER)
+	{
+		const float TargetYaw = HolderSeparation.Rotation().Yaw - 90.0f;
+		OutDesiredTransform.SetRotation(FRotator(0.0f, TargetYaw, 0.0f).Quaternion());
+	}
+
+	const FVector SlotMidpointLocal =
+		(LeftCarrySlot->GetRelativeLocation() + RightCarrySlot->GetRelativeLocation()) * 0.5f;
+	const FVector DesiredMidpoint = (FirstLocation + SecondLocation) * 0.5f;
+	OutDesiredTransform.SetLocation(
+		DesiredMidpoint - OutDesiredTransform.TransformVector(SlotMidpointLocal));
+	return true;
 }
 
 void AOMHeavyCarryableActor::SetHeavyCarryObstructed(bool bNewObstructed, const FHitResult& Hit)
@@ -759,6 +899,10 @@ void AOMHeavyCarryableActor::UpdateHeavyStatusText()
 	case EOMHeavyCarryState::WaitingForSecondHolder:
 		Text->SetText(NSLOCTEXT("OperationMouse", "HeavyCarryWaitingState", "HEAVY: WAITING 1/2"));
 		Text->SetTextRenderColor(FColor::Yellow);
+		break;
+	case EOMHeavyCarryState::WaitingForValidPositions:
+		Text->SetText(NSLOCTEXT("OperationMouse", "HeavyCarryAdjustState", "HEAVY: ADJUST POSITION 2/2"));
+		Text->SetTextRenderColor(FColor::Orange);
 		break;
 	case EOMHeavyCarryState::Carrying:
 		Text->SetText(NSLOCTEXT("OperationMouse", "HeavyCarryActiveState", "HEAVY: CARRYING 2/2"));

@@ -29,9 +29,14 @@ def validate_source_contract():
     character_cpp = (root / "Characters" / "OMMouseCharacter.cpp").read_text(encoding="utf-8")
     required = (
         "WaitingForSecondHolder",
+        "WaitingForValidPositions",
         "LeftCarrySlot",
         "RightCarrySlot",
         "AlignCarriersToSlots",
+        "TryEnterCarrying",
+        "BuildDesiredHeavyTransform",
+        "HaveHoldersAdjustedSinceFailedAlignment",
+        "GetHolderAlignmentTolerance",
         "RefreshCarrierCollisionIgnores",
         "IgnoreActorWhenMoving",
         "GetMoveIgnoreActors",
@@ -56,6 +61,7 @@ def validate_source_contract():
         "OnRep_HeavyCarryWorldState",
         "AppliedHeavyWorldStateRevision",
         "WakeAllRigidBodies",
+        "HEAVY: ADJUST POSITION 2/2",
     )
     combined = heavy_h + heavy_cpp
     for token in required:
@@ -63,6 +69,33 @@ def validate_source_contract():
             fail(f"Heavy Carry gameplay token missing: {token}")
     if heavy_cpp.count("AlignCarriersToSlots();") != 1:
         fail("Heavy Carry holder alignment must run once on join, not force-move holders every Tick")
+    begin_start = heavy_cpp.index("bool AOMHeavyCarryableActor::BeginCarry")
+    begin_end = heavy_cpp.index("bool AOMHeavyCarryableActor::EndCarry")
+    begin_body = heavy_cpp[begin_start:begin_end]
+    if "SetHeavyCarryState(EOMHeavyCarryState::Carrying)" in begin_body:
+        fail("Second holder still enters Carrying before alignment/clearance validation")
+    if "SetHeavyCarryState(EOMHeavyCarryState::WaitingForValidPositions)" not in begin_body:
+        fail("Second holder does not enter the explicit Adjust Position state")
+    try_enter_start = heavy_cpp.index("bool AOMHeavyCarryableActor::TryEnterCarrying()")
+    try_enter_end = heavy_cpp.index("bool AOMHeavyCarryableActor::HaveHoldersAdjustedSinceFailedAlignment()")
+    try_enter_body = heavy_cpp[try_enter_start:try_enter_end]
+    for token in (
+        "BuildDesiredHeavyTransform",
+        "SetActorLocationAndRotation",
+        "bReachedTarget",
+        "SetActorTransform(OriginalTransform",
+        "SetHeavyCarryState(EOMHeavyCarryState::Carrying)",
+    ):
+        if token not in try_enter_body:
+            fail(f"Heavy Carry validated startup sequence missing: {token}")
+    if try_enter_body.index("SetHeavyCarryState(EOMHeavyCarryState::Carrying)") < try_enter_body.index("bReachedTarget"):
+        fail("Heavy Carry claims Carrying before cargo clearance succeeds")
+    adjust_tick_start = heavy_cpp.index("if (HeavyCarryState == EOMHeavyCarryState::WaitingForValidPositions)")
+    adjust_tick_end = heavy_cpp.index("if (HeavyCarryState != EOMHeavyCarryState::Carrying)", adjust_tick_start)
+    adjust_tick_body = heavy_cpp[adjust_tick_start:adjust_tick_end]
+    for token in ("HaveHoldersAdjustedSinceFailedAlignment", "TryEnterCarrying", "WaitingForSecondHolder"):
+        if token not in adjust_tick_body:
+            fail(f"Adjust Position auto-recovery/release path missing: {token}")
     if "SetHeavyCarryMovementPenaltyActive" not in character_cpp:
         fail("Character movement-penalty gameplay hook is missing")
     carryable_h = (root / "Carry" / "OMCarryableActor.h").read_text(encoding="utf-8")
@@ -177,6 +210,7 @@ def validate():
         "OM_SPRINT3_HEAVY_VALIDATION|PASS|"
         "normal_carry_regression_fixture=1|heavy_carry_fixture=1|starts=2|"
         "prototype_game_mode=present|daylight_graybox=present|map_check=executed|"
+        "startup_adjust_position=present|validated_cargo_startup_sweep=present|"
         "network_movement_architecture=intentionally_pending|collision_consistency=present"
     )
     unreal.log("OM_SPRINT3_HEAVY_VALIDATION|FINAL|PASS")

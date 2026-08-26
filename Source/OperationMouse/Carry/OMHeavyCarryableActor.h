@@ -12,6 +12,7 @@ enum class EOMHeavyCarryState : uint8
 {
 	Idle,
 	WaitingForSecondHolder,
+	WaitingForValidPositions,
 	Carrying
 };
 
@@ -68,7 +69,11 @@ private:
 	void SetHeavyCarryState(EOMHeavyCarryState NewState);
 	void SetMovementPenaltyForAllHolders(bool bActive);
 	void ApplyReplicatedMovementPenalty();
-	void AlignCarriersToSlots();
+	bool AlignCarriersToSlots();
+	bool TryEnterCarrying();
+	bool BuildDesiredHeavyTransform(FTransform& OutDesiredTransform) const;
+	bool HaveHoldersAdjustedSinceFailedAlignment() const;
+	float GetHolderAlignmentTolerance() const;
 	void RefreshCarrierCollisionIgnores();
 	void ClearCarrierCollisionIgnores();
 	void AddCarrierCollisionIgnore(UPrimitiveComponent* SourceComponent, AActor* TargetActor);
@@ -133,6 +138,9 @@ private:
 	bool bSavedHeavySimulatePhysics = true;
 	bool bHeavyPresentationSaved = false;
 	bool bHeavyCarryObstructed = false;
+	bool bWaitingForHolderAdjustment = false;
+	FVector FailedAlignmentFirstHolderLocation = FVector::ZeroVector;
+	FVector FailedAlignmentSecondHolderLocation = FVector::ZeroVector;
 	uint32 AppliedHeavyWorldStateRevision = 0;
 	TArray<TWeakObjectPtr<AOMMouseCharacter>> ReplicatedPenaltyCharacters;
 

@@ -3,7 +3,7 @@
 ## Status
 
 - Candidate A comparison profile: **PRESERVED / NOT ACCEPTED**
-- Candidate B active profile: **PROVISIONAL SCALE DIRECTION / CAMERA RETEST PENDING**
+- Candidate B active profile: **PROVISIONAL SCALE DIRECTION / CAMERA + PHYSICS FOUNDATION MANUAL PASS**
 - Targeted structural validation: **PASSED**
 - Map Check: **0 errors / 0 warnings**
 - Manual scale review: **PENDING**
@@ -202,13 +202,15 @@ collision tolerances and network behavior retain their existing values.
 
 ## Post-scale Tuning Backlog
 
-1. **Physics contact profile:** Candidate B built-in tuning is ready for manual
-   Light/Medium/Heavy contact review; production adoption is not yet approved.
+1. **Physics contact profile:** Candidate B built-in `150 / 5000`, zero-touch
+   profile manually PASSED at foundation/calibration level. Light response is
+   controlled, Medium response is very small but accepted for now, Heavy is
+   effectively stable, and ridiculous vertical launch was not observed.
 2. **Heavy Carry startup clearance:** Zone H exposes the pre-existing case where
    state reaches 2/2 before lift when a holder is extremely close. Stepping
    backward remains the recovery.
-3. Candidate B camera foundation values are test-only; open-space, wall,
-   under-table and 25/30/40-uu passage camera review remains pending.
+3. Candidate B camera foundation manually passed. Its values remain test-only;
+   final Camera feel and Ali visual polish are still pending.
 4. Production Interaction range remains undecided. Current qualitative target:
    approximately 1.5–2 mouse body lengths.
 5. Production Carry distance/clearance and Heavy Carry spacing remain undecided.

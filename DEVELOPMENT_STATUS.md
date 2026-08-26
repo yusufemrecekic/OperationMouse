@@ -8,9 +8,9 @@ Mouse Scale Calibration
 
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
-Current: Candidate A preserved after manual rejection; Candidate B scale/movement is the strong provisional direction; a local-only close-space camera foundation is implemented and automated validation/Map Check PASSED; manual camera review pending
+Current: Candidate A preserved after manual rejection; Candidate B scale/movement is the strong provisional direction; Camera Foundation and Physics Contact Foundation manually PASSED at calibration level; Heavy Carry startup-clearance manual review pending
 
-Next: Ali/Yusuf Candidate B camera review in open space, walls, under-table and 25/30/40-uu passages before any production tuning; Hilmi formal network acceptance and physical gamepad evidence remain pending
+Next: Yusuf manual Host/Client Heavy Carry startup-clearance review; final Camera feel/Ali visual polish, Hilmi formal network acceptance and physical gamepad evidence remain pending
 
 ## Completed
 
@@ -100,6 +100,8 @@ Next: Ali/Yusuf Candidate B camera review in open space, walls, under-table and 
 - Final camera-composition candidate adds a capsule/posture-derived base pivot (1.2x current half-height), provisional smoothly blended crouch arm (0.60x / 102 uu), and a Camera-channel player-reference-to-pivot sweep before the existing distance sweep. Overhead/seat/back blockers clamp the pivot to the player's side, start penetration is handled explicitly, and whole-mesh hiding is restricted to emergency near-zero collapse rather than ordinary crouch/close-space play. Editor build, targeted Scale validation and Map Check (0 errors / 0 warnings) PASSED; manual under-chair and crouch acceptance remains pending.
 - Camera Foundation Candidate B manual review PASSED; foundation is DONE while final camera feel and Ali visual polish remain NOT DONE. Candidate B now also has a test-only built-in CharacterMovement physics-contact profile and Light/Medium/Heavy fixture zone; manual physics review remains pending.
 - Candidate B Physics Contact first profile (`50 / 500`) manual review FAILED because all three masses were over-suppressed. Fixture mass/collision/damping remained valid; blocking push is recalibrated to the lowest moderate candidate (`150 / 5000`) while the artificial-Z touch path stays disabled. Automated validation passed; manual physics re-review remains pending.
+- Candidate B Physics Contact (`150 / 5000`, Touch `0`) manual foundation review PASSED: Light controlled, Medium very small but accepted, Heavy effectively stable, and no ridiculous vertical launch observed. Production physics feel remains a later tuning decision.
+- Heavy Carry startup now separates `2 holders registered` from valid carrying geometry. Blocked/partial slot alignment or an obstructed initial cargo sweep stays server-authoritatively in `HEAVY: ADJUST POSITION 2/2`; natural holder movement automatically retries and promotes to Carrying only after clearance succeeds. Manual Host/Client startup-clearance review remains pending.
 
 ## Repository
 
@@ -157,7 +159,7 @@ Branch: `feature/yusuf-scale-calibration`
 
 Main files: `/Game/OperationMouse/Tests/Scale/`, `Scripts/Editor/configure_scale_calibration.py`, `Scripts/Editor/validate_scale_calibration.py`
 
-Status: CANDIDATE A REJECTED/PRESERVED - CANDIDATE B PROVISIONAL SCALE/MOVEMENT DIRECTION - CLOSE-SPACE CAMERA AUTOMATED VALIDATION PASSED - MANUAL CAMERA REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
+Status: CANDIDATE A REJECTED/PRESERVED - CANDIDATE B PROVISIONAL SCALE/MOVEMENT DIRECTION - CAMERA FOUNDATION MANUAL PASS - PHYSICS CONTACT FOUNDATION MANUAL PASS - HEAVY STARTUP-CLEARANCE MANUAL REVIEW PENDING - HILMI NETWORK ACCEPTANCE PENDING - GAMEPAD MANUAL TEST PENDING - OLD PHASE 5 STASH PRESERVED
 
 ## Deferred / Not V1
 

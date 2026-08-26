@@ -13,6 +13,9 @@ disconnect, late-join, latency or physical-network evidence pass.
 - `Idle` (`0` holders): physics/collision behave like a dropped object.
 - `WaitingForSecondHolder` (`1` holder): the object is frozen at its current
   transform and waits for a second distinct Character.
+- `WaitingForValidPositions` (`2` holders): both legitimate holders remain
+  registered, but the server reports `HEAVY: ADJUST POSITION 2/2` until holder
+  geometry and the initial swept cargo transform are feasible.
 - `Carrying` (`2` holders): the object follows the midpoint of the two gameplay
   CarryPoints, the first/second Characters align to `LeftCarrySlot` and
   `RightCarrySlot`, and both receive the Heavy Carry movement penalty. The
@@ -23,6 +26,21 @@ disconnect, late-join, latency or physical-network evidence pass.
   presentation.
 - Reset releases every gameplay holder, clears movement penalties and restores
   the Heavy Carryable to its home transform.
+
+The second holder no longer promotes the cargo directly to `Carrying`.
+Pair-specific cargo/holder and holder/holder movement ignores are installed,
+then each Character makes one swept alignment attempt toward its world-space
+slot. The result is checked with a tolerance derived from the smallest holder
+capsule radius (`x 0.25`). A blocked or partial alignment remains in Adjust
+Position. After either holder moves naturally by that tolerance, the existing
+server tick re-evaluates geometry automatically; no second interaction or Reset
+is required.
+
+Before promotion, the server builds the same midpoint/slot transform used by
+normal Heavy movement and performs the existing swept actor move. Start
+penetration, blocked/partial travel or rotation mismatch restores the original
+safe transform and leaves the state in Adjust Position. Only a fully reached
+initial transform enables `Carrying` and the movement penalty.
 
 ## Test harness and automated evidence
 
