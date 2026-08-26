@@ -158,6 +158,29 @@ if abs(standing_pivot_z - 18.0) > 0.01 or abs(crouched_pivot_z - 9.6) > 0.01:
 if abs(170.0 * close_space_camera_b.get_editor_property("crouch_arm_multiplier") - 102.0) > 0.01:
     fail("Candidate B crouched desired arm is not 102 uu")
 
+expected_physics_profile = {
+    "mass": 10.0,
+    "initial_push_force_factor": 50.0,
+    "push_force_factor": 500.0,
+    "touch_force_factor": 0.0,
+    "min_touch_force": -1.0,
+    "max_touch_force": 0.0,
+    "repulsion_force": 0.25,
+}
+for property_name, expected in expected_physics_profile.items():
+    actual = movement_b.get_editor_property(property_name)
+    if abs(actual - expected) > 0.01:
+        fail(f"Candidate B physics profile mismatch: {property_name}={actual}, expected {expected}")
+for property_name, expected in {
+    "enable_physics_interaction": True,
+    "push_force_scaled_to_mass": False,
+    "touch_force_scaled_to_mass": False,
+    "scale_push_force_to_velocity": True,
+}.items():
+    actual = movement_b.get_editor_property(property_name)
+    if actual != expected:
+        fail(f"Candidate B physics flag mismatch: {property_name}={actual}, expected {expected}")
+
 game_mode_cdo = unreal.get_default_object(game_mode.generated_class())
 if game_mode_cdo.get_editor_property("default_pawn_class") != candidate_b.generated_class():
     fail("Calibration GameMode does not spawn active Candidate B")
@@ -174,7 +197,7 @@ actors = list(actor_subsystem.get_all_level_actors())
 tags = {str(tag) for actor in actors for tag in list(actor.get_editor_property("tags"))}
 if "OMCameraSoftOccluder" in tags:
     fail("Rejected soft-occluder tag returned to the calibration map")
-missing_zones = [f"ScaleZone{letter}" for letter in "ABCDEFGHI" if f"ScaleZone{letter}" not in tags]
+missing_zones = [f"ScaleZone{letter}" for letter in "ABCDEFGHIJ" if f"ScaleZone{letter}" not in tags]
 if missing_zones:
     fail(f"Missing calibration zones: {missing_zones}")
 
@@ -208,6 +231,28 @@ if len(interactions) < 6:
     fail(f"Expected five range fixtures plus Reset, found {len(interactions)}")
 
 actor_labels = {actor.get_actor_label() for actor in actors}
+expected_physics_props = {
+    "Scale_J_Physics_Light": (2.0, 0.35, 0.35),
+    "Scale_J_Physics_Medium": (10.0, 0.55, 0.55),
+    "Scale_J_Physics_Heavy": (50.0, 0.75, 0.75),
+}
+for label, (expected_mass, expected_linear, expected_angular) in expected_physics_props.items():
+    matches = [actor for actor in actors if actor.get_actor_label() == label]
+    if len(matches) != 1:
+        fail(f"Physics contact fixture missing or duplicated: {label}")
+    component = matches[0].get_editor_property("static_mesh_component")
+    # Headless commandlets do not create a physics body, so GetMass() returns 0.
+    # Validate the serialized override that becomes the calculated PIE mass.
+    body_instance = component.get_editor_property("body_instance")
+    actual_mass = body_instance.get_editor_property("mass_in_kg_override")
+    if abs(actual_mass - expected_mass) > 0.05:
+        fail(f"Physics fixture mass mismatch: {label}={actual_mass}, expected {expected_mass}")
+    if not body_instance.get_editor_property("simulate_physics"):
+        fail(f"Physics fixture does not simulate physics: {label}")
+    if abs(component.get_linear_damping() - expected_linear) > 0.01:
+        fail(f"Physics fixture linear damping mismatch: {label}")
+    if abs(component.get_angular_damping() - expected_angular) > 0.01:
+        fail(f"Physics fixture angular damping mismatch: {label}")
 required_human_references = {
     "Scale_A_CounterTop90",
     "Scale_A_DiningTop75",
@@ -340,7 +385,7 @@ unreal.SystemLibrary.execute_console_command(world, "MAP CHECK")
 unreal.log(
     "OM_SCALE_VALIDATION|PASS|active=B|candidate_a=preserved|"
     "candidate_b=7.5x15|visual_scale=0.15|walk=270|sprint=400|"
-    f"zones=9|starts={len(starts)}|normal_cargo={len(normal_cargo)}|"
+    f"zones=10|physics_masses=2,10,50kg|starts={len(starts)}|normal_cargo={len(normal_cargo)}|"
     f"heavy_cargo={len(heavy_cargo)}|interactions={len(interactions)}|"
     "chair_camera_proxies=2|production_tuning=unchanged|map_check=executed"
 )

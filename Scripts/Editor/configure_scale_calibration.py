@@ -47,6 +47,18 @@ CANDIDATE_B_CAMERA_CLOSE_BLEND_SPEED = 8.0
 CANDIDATE_B_CAMERA_BASE_PIVOT_HEIGHT_FACTOR = 1.2
 CANDIDATE_B_CAMERA_CROUCH_ARM_MULTIPLIER = 0.6
 CANDIDATE_B_CAMERA_CROUCH_BLEND_SPEED = 8.0
+CANDIDATE_B_PHYSICS_MASS = 10.0
+CANDIDATE_B_INITIAL_PUSH_FORCE = 50.0
+CANDIDATE_B_PUSH_FORCE = 500.0
+CANDIDATE_B_TOUCH_FORCE = 0.0
+CANDIDATE_B_MIN_TOUCH_FORCE = -1.0
+CANDIDATE_B_MAX_TOUCH_FORCE = 0.0
+CANDIDATE_B_REPULSION_FORCE = 0.25
+PHYSICS_PROP_PROFILES = (
+    ("Light", 2.0, 0.35, 0.35),
+    ("Medium", 10.0, 0.55, 0.55),
+    ("Heavy", 50.0, 0.75, 0.75),
+)
 
 
 def create_blueprint(asset_name, parent_class):
@@ -129,6 +141,18 @@ def configure_candidate_assets():
         "max_step_height", CANDIDATE_B_MAX_STEP_HEIGHT
     )
     movement.set_editor_property("jump_z_velocity", CANDIDATE_B_JUMP_Z)
+    # Candidate B only: retain UE's blocking-contact interaction while removing
+    # CapsuleTouched's artificial upward impulse and reducing runaway push energy.
+    movement.set_editor_property("mass", CANDIDATE_B_PHYSICS_MASS)
+    movement.set_editor_property("initial_push_force_factor", CANDIDATE_B_INITIAL_PUSH_FORCE)
+    movement.set_editor_property("push_force_factor", CANDIDATE_B_PUSH_FORCE)
+    movement.set_editor_property("touch_force_factor", CANDIDATE_B_TOUCH_FORCE)
+    movement.set_editor_property("min_touch_force", CANDIDATE_B_MIN_TOUCH_FORCE)
+    movement.set_editor_property("max_touch_force", CANDIDATE_B_MAX_TOUCH_FORCE)
+    movement.set_editor_property("repulsion_force", CANDIDATE_B_REPULSION_FORCE)
+    movement.set_editor_property("push_force_scaled_to_mass", False)
+    movement.set_editor_property("touch_force_scaled_to_mass", False)
+    movement.set_editor_property("scale_push_force_to_velocity", True)
     player_cdo.set_editor_property(
         "normal_walk_speed", CANDIDATE_B_WALK_SPEED
     )
@@ -566,6 +590,53 @@ def build_zone_i(actor_subsystem, cube, floor, fixture):
     add_text(actor_subsystem, "Scale_Label_I_Shared", "SIDE-BY-SIDE / PASS / SHARED APPROACH", unreal.Vector(0, 1570, 70), zone, 14)
 
 
+def build_zone_j(actor_subsystem, cube, floor, fixture, marker):
+    zone = "ScaleZoneJ"
+    center = (1700.0, 1300.0)
+    add_zone_floor(actor_subsystem, cube, floor, zone, center, (1100.0, 700.0))
+    add_text(actor_subsystem, "Scale_Label_ZoneJ", "J - PHYSICS CONTACT TEST", unreal.Vector(1700, 1020, 120), zone, 24)
+
+    # Three equal-size bodies isolate deliberate physical mass/damping response.
+    # A low curb behind each lane makes tipping and near-edge behavior readable.
+    for index, (name, mass, linear_damping, angular_damping) in enumerate(PHYSICS_PROP_PROFILES):
+        lane_y = 1130.0 + index * 170.0
+        prop = add_cube(
+            actor_subsystem,
+            cube,
+            fixture,
+            f"Scale_J_Physics_{name}",
+            unreal.Vector(1700.0, lane_y, 20.0),
+            (40.0, 40.0, 40.0),
+            zone,
+        )
+        component = prop.get_editor_property("static_mesh_component")
+        component.set_mobility(unreal.ComponentMobility.MOVABLE)
+        component.set_collision_profile_name("PhysicsActor")
+        component.set_linear_damping(linear_damping)
+        component.set_angular_damping(angular_damping)
+        component.set_simulate_physics(True)
+        component.set_mass_override_in_kg(unreal.Name("None"), mass, True)
+        add_text(
+            actor_subsystem,
+            f"Scale_Label_J_{name}",
+            f"{name.upper()} - {mass:g} KG",
+            unreal.Vector(1700.0, lane_y, 85.0),
+            zone,
+            14,
+        )
+        add_cube(
+            actor_subsystem,
+            cube,
+            marker,
+            f"Scale_J_Lane_{name}",
+            unreal.Vector(1450.0, lane_y, 1.0),
+            (360.0, 3.0, 2.0),
+            zone,
+        )
+
+    add_text(actor_subsystem, "Scale_Label_J_Note", "WALK / SPRINT / SIDE / REPEAT / LEDGE", unreal.Vector(1950, 1580, 80), zone, 13)
+
+
 def build_walkable_route(actor_subsystem, cube, floor):
     """Connect isolated pads without covering any measured gap/clearance fixture."""
     route = "ScaleRoute"
@@ -579,6 +650,7 @@ def build_walkable_route(actor_subsystem, cube, floor):
         ("BF", (-700.0, -337.5), (140.0, 525.0, 10.0)),
         ("CG", (500.0, -337.5), (140.0, 525.0, 10.0)),
         ("GI", (500.0, 875.0), (180.0, 200.0, 10.0)),
+        ("HJ", (1700.0, 875.0), (180.0, 200.0, 10.0)),
     )
     for name, location, dimensions in segments:
         add_cube(
@@ -646,6 +718,7 @@ def configure_map(game_mode):
     build_zone_g(actor_subsystem, cube, floor, fixture, carryable_class)
     build_zone_h(actor_subsystem, cube, floor, fixture, marker, heavy_class, interaction_class)
     build_zone_i(actor_subsystem, cube, floor, fixture)
+    build_zone_j(actor_subsystem, cube, floor, fixture, marker)
     build_walkable_route(actor_subsystem, cube, floor)
 
     for index, y in enumerate((1240.0, 1360.0), start=1):
@@ -656,7 +729,7 @@ def configure_map(game_mode):
     unreal.log(
         "OM_SCALE_CONFIG|PASS|active=B|candidate_a=preserved|radius=7.5|"
         "halfheight=15|visual_scale=0.15|mesh_z=-15|"
-        "visual_height=27.071|walk=270|sprint=400|jump_z=245|zones=A-I"
+        "visual_height=27.071|walk=270|sprint=400|jump_z=245|zones=A-J|physics=2,10,50kg"
     )
 
 

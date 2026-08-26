@@ -68,6 +68,10 @@ GameMode no longer spawns it by default.
 | Base pivot height | current capsule half-height x 1.2 |
 | Provisional crouch arm | standing desired arm x 0.60 (102 uu) |
 | Posture blend rate | 8 per second |
+| Character gameplay mass | 10 kg |
+| Initial / sustained push force | 50 / 500 |
+| Touch force | 0 (disables artificial upward touch impulse) |
+| Repulsion force | 0.25 |
 
 Candidate B opts into `UOMCloseSpaceCameraComponent`; the reusable component is
 disabled by default on the production Character. It owns a local-only 5-uu
@@ -144,6 +148,30 @@ Package: `/Game/OperationMouse/Tests/Scale/L_ScaleCalibration`
   Reset fixture.
 - **I — Two-player spacing:** two PlayerStarts and 25, 35 and 50-uu shared
   passage references.
+- **J — Physics contact:** equal-size simulated Light/Medium/Heavy cubes with
+  deliberate 2/10/50-kg mass overrides, 0.35/0.55/0.75 linear and angular
+  damping, straight/side/repeated-contact lanes and nearby platform edges.
+
+## Candidate B Physics Contact Profile
+
+The inherited UE profile was Character mass 100 kg, InitialPushForceFactor 500,
+PushForceFactor 750000, TouchForceFactor 1, unlimited minimum touch force,
+MaxTouchForce 250 and RepulsionForce 2.5. `CapsuleTouched` also builds its
+impulse direction with a positive gravity-space Z component. Exact repeatable
+PIE displacement measurements are not claimed because contact angle, solver
+substeps and frame timing make this graybox test nondeterministic; the confirmed
+baseline symptom was occasional upward/forward missile-like launch.
+
+Candidate B alone now uses a 10-kg gameplay mass, 50 initial push, 500 sustained
+push, zero touch force, Min/MaxTouchForce -1/0 and 0.25 repulsion. Push and touch
+mass scaling are disabled; velocity scaling remains enabled. Zero touch force
+removes the artificial upward overlap impulse while ordinary blocking contact
+still supplies controlled physical comedy. Leaving push mass scaling disabled
+is intentional: UE multiplies the applied force by body mass when enabled,
+which would defeat the desired Light > Medium > Heavy acceleration response.
+No engine, production Character, Carry, Heavy Carry, RPC or replication code
+was changed. Listen Server and later latency/physical 2-PC behavior remain a
+Hilmi evidence responsibility.
 
 The map uses movable daylight, fixed exposure, neutral graybox materials,
 positive-scale readable labels and walkable route links. It does not modify the
@@ -158,9 +186,8 @@ collision tolerances and network behavior retain their existing values.
 
 ## Post-scale Tuning Backlog
 
-1. **Physics prop launch:** ordinary Character contact can create unrealistic
-   vertical prop launches. Later tuning must inspect CharacterMovement physics
-   interaction forces, mass ratios, push/touch impulse and vertical impulse.
+1. **Physics contact profile:** Candidate B built-in tuning is ready for manual
+   Light/Medium/Heavy contact review; production adoption is not yet approved.
 2. **Heavy Carry startup clearance:** Zone H exposes the pre-existing case where
    state reaches 2/2 before lift when a holder is extremely close. Stepping
    backward remains the recovery.
