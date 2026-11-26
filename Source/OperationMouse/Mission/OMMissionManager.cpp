@@ -26,10 +26,14 @@ AOMMissionManager::AOMMissionManager()
 void AOMMissionManager::BeginPlay()
 {
 	Super::BeginPlay();
-	ObjectiveProgress = 0;
-	MissionState = EOMMissionState::Inactive;
+	// Clients may already have received the current mission snapshot before BeginPlay.
+	if (HasAuthority())
+	{
+		ObjectiveProgress = 0;
+		MissionState = EOMMissionState::Inactive;
+		UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Initialized] Id=%s Target=%d State=Inactive"), *GetMissionId().ToString(), GetObjectiveTarget());
+	}
 	UpdateStatusText();
-	UE_LOG(LogOperationMouse, Log, TEXT("[Mission][Initialized] Id=%s Target=%d State=Inactive"), *GetMissionId().ToString(), GetObjectiveTarget());
 }
 
 FName AOMMissionManager::GetMissionId() const

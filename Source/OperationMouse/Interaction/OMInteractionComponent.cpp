@@ -31,6 +31,12 @@ void UOMInteractionComponent::BeginPlay()
 
 void UOMInteractionComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// Release any server-side exclusive interaction before this component stops ticking.
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		CancelActiveInteraction();
+	}
+
 	if (PromptWidget)
 	{
 		PromptWidget->RemoveFromParent();

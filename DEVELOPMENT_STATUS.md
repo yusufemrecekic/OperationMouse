@@ -6,6 +6,37 @@ Sprint 3 Mission Gameplay Foundation
 
 ## Milestone Progress
 
+### Hilmi network acceptance checkpoint — 2026-11-26
+
+Branch: `feature/hilmi-network-state-cleanup`, based on `e320a21`.
+Evidence below is Hilmi's manual report in chat unless explicitly stated otherwise;
+it is not automated or physical two-PC acceptance.
+
+| Check | Evidence / status |
+| --- | --- |
+| Normal Carry: Client disconnect while holding | Reported working: Host could grab the object afterward. |
+| Heavy Carry: holder disconnect recovery | Hilmi reports it was already tested and working; do not repeat without a new failure or relevant change. |
+| Normal Carry: sequential competing requests | Reported working; true simultaneous contention is still a team-test item. |
+| Normal Carry: Client grab/drop, then Host grab under requested Clients Only / Bad profile | Host successfully grabbed; numeric impairment settings were not captured. |
+| Heavy Carry: release/rejoin under impairment | No unambiguous result recorded; Hilmi later identified the repeated request as an already-performed test. Clarify existing evidence before requesting another run. |
+| Mission after cleanup changes: normal Start / Objective / Reset | Hilmi reports matching state/progress on both peers. |
+| Mission under network impairment | Hilmi reports the requested Start / Objective / Reset test succeeded after configuring Clients Only / Bad; numeric impairment settings were not captured. |
+| Apparent delayed visibility between peers with emulation disabled | Unresolved; Hilmi explicitly deferred investigation. |
+| Cleanup changes build | User-supplied Win64 Development Editor output: `Result: Succeeded`; both changed source files compiled. |
+
+Code changes: Mission BeginPlay initializes state only on authority; Interaction
+EndPlay cancels an active server interaction. The current proxy implementation
+forces Instant interactions, so the proposed manual Hold/disconnect case cannot
+be executed in the existing map. Do not claim runtime coverage for that path or
+add gameplay fixtures merely to close this checklist.
+
+Scope: `SPRINT2_CLOSEOUT_AUDIT.md` records active-mission joining as rejected,
+active-mission reconnect and host migration as V1 OUT. The Mission initialization
+guard is defensive state preservation, not a new late-join feature or acceptance.
+Physical two-PC, 3/4-player contention and formal network approval remain open.
+Future test instructions must identify an existing executable fixture and use
+this checkpoint to avoid repeating completed work without a concrete reason.
+
 Completed: Phase 1 multiplayer framework, Phase 2 Enhanced Input + basic replicated movement, Phase 3 core locomotion, Phase 4 Basic Mantle, and Modular Prototype Character / Animation Layer (PASSED and merged)
 
 Current: Yusuf Mission gameplay foundation and minimum two-player Listen Server integration PASSED; Hilmi network acceptance remains pending
